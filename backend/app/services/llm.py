@@ -7,7 +7,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = """You are a security code review assistant. You will analyze ONE specific vulnerability in the provided source code.
+SYSTEM_PROMPT = """You are a security code review assistant. You will analyze ONE specific vulnerability or security hotspot in the provided source code.
 
 CRITICAL: You MUST respond with ONLY a valid JSON object. No explanations, no markdown, no text before or after the JSON.
 
@@ -24,7 +24,7 @@ Required JSON format:
 }
 
 RULES:
-- Analyze ONLY the specific vulnerability mentioned (identified by Key and Line Number)
+- Analyze ONLY the specific vulnerability/hotspot mentioned (identified by Key and Line Number)
 - "triage" must be exactly one of: "false_positive", "true_positive", "needs_human_review"
 - "confidence" must be a number between 0.0 and 1.0
 - "severity_override" must be one of: "LOW", "MEDIUM", "HIGH", "CRITICAL", or null
@@ -32,25 +32,63 @@ RULES:
 - All string values must use double quotes
 - Do not include any text outside the JSON object
 
-FALSE POSITIVE indicators:
-- Input is properly sanitized/validated before use
-- Security controls are in place (prepared statements, output encoding, parameterized queries)
-- The data flow doesn't actually reach a dangerous sink
-- The vulnerable function is never called with user input
-- Framework provides automatic protection
+FOR VULNERABILITIES (false_positive / true_positive criteria):
+- FALSE POSITIVE: Input is properly sanitized/validated, security controls in place, data doesn't reach dangerous sink
+- TRUE POSITIVE: Unsanitized user input reaches dangerous functions, no validation/encoding, known vulnerable patterns
 
-TRUE POSITIVE indicators:
-- Unsanitized user input reaches dangerous functions
-- No validation or encoding is applied
-- Known vulnerable patterns without mitigation
-- Security controls are missing or bypassed
-- Direct string concatenation in SQL/commands
+FOR SECURITY HOTSPOTS (requires different analysis):
+- Security hotspots are code locations that may be security-sensitive and require manual review
+- Evaluate if the flagged code pattern is actually risky in this specific context
+- FALSE POSITIVE: The code pattern is safe in this context (e.g., hardcoded credentials are for testing, crypto is configured correctly)
+- TRUE POSITIVE: The code pattern represents a real security risk (weak crypto, hardcoded production secrets, missing security headers)
+- NEEDS HUMAN REVIEW: Cannot determine if the security-sensitive code is properly configured without more context
 
-NEEDS HUMAN REVIEW:
+NEEDS HUMAN REVIEW criteria:
 - Complex data flows that are hard to trace
 - Partial mitigations that may or may not be sufficient
 - When confidence is below 0.6
-- Cannot determine data source
+- Cannot determine data source or security context
+
+Start your response with { and end with }"""
+
+SECURITY_HOTSPOT_SYSTEM_PROMPT = """You are a security code review assistant. You will analyze ONE specific Security Hotspot in the provided source code.
+
+Security Hotspots are code locations that require manual review because they are potentially security-sensitive. Unlike vulnerabilities, they are not confirmed issues - they highlight code that MIGHT be vulnerable depending on context.
+
+CRITICAL: You MUST respond with ONLY a valid JSON object. No explanations, no markdown, no text before or after the JSON.
+
+Required JSON format:
+{
+  "file_path": "path from input",
+  "vulnerability_key": "the key from input",
+  "triage": "false_positive",
+  "confidence": 0.85,
+  "short_reason": "Crypto algorithm is properly configured with secure parameters",
+  "detailed_explanation": "The security hotspot at line 45 flags the use of cryptography. However, the implementation uses AES-256-GCM with a properly derived key and random IV. This is a secure configuration.",
+  "fix_suggestion": "No fix needed - implementation follows security best practices",
+  "severity_override": null
+}
+
+SECURITY HOTSPOT CATEGORIES AND EVALUATION:
+- **Weak Cryptography**: Check if crypto algorithms/key sizes are adequate (AES-256, RSA-2048+, SHA-256+)
+- **Hardcoded Credentials**: Determine if credentials are for testing/dev or production use
+- **Insecure Configuration**: Check security headers, TLS settings, cookie flags
+- **SQL Injection**: Verify if parameterized queries or ORM are used properly
+- **Command Injection**: Check if user input reaches shell commands safely
+- **Path Traversal**: Verify input validation for file paths
+- **CSRF**: Check if anti-CSRF tokens are implemented
+- **Authentication/Authorization**: Verify proper access controls
+
+TRIAGE DECISION:
+- "false_positive": The code pattern is SAFE in this context. Security controls are properly implemented.
+- "true_positive": The code pattern represents a REAL security risk. Fix is required.
+- "needs_human_review": Cannot determine safety without additional context or the implementation is borderline.
+
+RULES:
+- "confidence" must be a number between 0.0 and 1.0
+- "severity_override" must be one of: "LOW", "MEDIUM", "HIGH", "CRITICAL", or null
+- Reference the specific line numbers in your detailed_explanation
+- Explain WHY the code is safe or unsafe in this specific context
 
 Start your response with { and end with }"""
 
@@ -150,12 +188,12 @@ class LLMService:
         vulnerability: Dict[str, Any],
         timeout: float = 120.0
     ) -> Dict[str, Any]:
-        """Analyze a single vulnerability using LLM.
+        """Analyze a single vulnerability or security hotspot using LLM.
         
         Args:
             file_path: Path to the file being analyzed
             source_code: Source code of the file
-            vulnerability: Single vulnerability dict with key, rule, message, line, severity, etc.
+            vulnerability: Single vulnerability/hotspot dict with key, rule, message, line, severity, etc.
             timeout: Request timeout in seconds
             
         Returns:
@@ -170,7 +208,35 @@ class LLMService:
         vuln_type = vulnerability.get("type", "VULNERABILITY")
         vuln_locations = vulnerability.get("locations", [])
         
-        user_prompt = f"""File Path: {file_path}
+        # Security hotspot specific fields
+        security_category = vulnerability.get("securityCategory", "")
+        vuln_probability = vulnerability.get("vulnerabilityProbability", "")
+        
+        # Choose appropriate system prompt based on type
+        is_hotspot = vuln_type == "SECURITY_HOTSPOT"
+        system_prompt = SECURITY_HOTSPOT_SYSTEM_PROMPT if is_hotspot else SYSTEM_PROMPT
+        
+        # Build the user prompt
+        if is_hotspot:
+            user_prompt = f"""File Path: {file_path}
+
+=== SECURITY HOTSPOT DETAILS ===
+Key: {vuln_key}
+Rule/Category: {vuln_rule}
+Security Category: {security_category}
+Vulnerability Probability: {vuln_probability}
+Severity: {vuln_severity}
+Line Number: {vuln_line}
+Message: {vuln_message}
+
+=== FULL SOURCE CODE ===
+{source_code}
+
+Please analyze this Security Hotspot (Key: {vuln_key}) at line {vuln_line}. 
+Determine if this code pattern is actually a security risk in this specific context, or if it's safely implemented.
+Respond with false_positive if SAFE, true_positive if RISKY, or needs_human_review if UNCERTAIN."""
+        else:
+            user_prompt = f"""File Path: {file_path}
 
 === VULNERABILITY DETAILS ===
 Key: {vuln_key}
@@ -190,7 +256,7 @@ Please analyze ONLY this specific vulnerability (Key: {vuln_key}) at line {vuln_
 
         # Store the full prompt for debugging/transparency
         full_prompt = f"""=== SYSTEM PROMPT ===
-{SYSTEM_PROMPT}
+{system_prompt}
 
 === USER PROMPT ===
 {user_prompt}"""
@@ -199,7 +265,7 @@ Please analyze ONLY this specific vulnerability (Key: {vuln_key}) at line {vuln_
         payload = {
             "model": self.model,
             "messages": [
-                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ],
             "temperature": 0.1,

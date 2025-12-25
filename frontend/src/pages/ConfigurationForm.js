@@ -13,8 +13,18 @@ import {
   CircularProgress,
   Chip,
   Tooltip,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableRow,
 } from '@mui/material';
-import { Save as SaveIcon, ArrowBack as BackIcon, Info as InfoIcon } from '@mui/icons-material';
+import { 
+  Save as SaveIcon, 
+  ArrowBack as BackIcon, 
+  Info as InfoIcon,
+  CheckCircle as CheckIcon,
+} from '@mui/icons-material';
 import { configurationApi } from '../api';
 import axios from 'axios';
 
@@ -172,6 +182,161 @@ function ConfigurationForm() {
             will use default settings if left empty. Configure defaults in the <strong>Default Settings</strong> page.
           </Typography>
         </Alert>
+      )}
+
+      {/* Effective Settings Summary - Shows what will actually be used */}
+      {defaults && (
+        <Card sx={{ mb: 3, backgroundColor: '#e3f2fd' }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom color="primary">
+              Effective Settings (What Will Be Used)
+            </Typography>
+            <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+              This shows the actual values that will be used when running a scan. 
+              <Chip size="small" label="Config" color="primary" variant="outlined" sx={{ mx: 0.5 }} /> = from this configuration,
+              <Chip size="small" label="Default" color="secondary" variant="outlined" sx={{ mx: 0.5 }} /> = from default settings.
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={12} md={4}>
+                <Paper sx={{ p: 2 }}>
+                  <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+                    LLM Settings
+                  </Typography>
+                  <Table size="small">
+                    <TableBody>
+                      <TableRow>
+                        <TableCell sx={{ border: 0, py: 0.5, pl: 0 }}>URL:</TableCell>
+                        <TableCell sx={{ border: 0, py: 0.5 }}>
+                          {formData.llm_url ? (
+                            <Chip size="small" label={formData.llm_url} color="primary" variant="outlined" title="From Config" />
+                          ) : defaults.llm_url ? (
+                            <Chip size="small" label={defaults.llm_url} color="secondary" variant="outlined" title="From Default" />
+                          ) : (
+                            <Chip size="small" label="Not Set" color="error" variant="outlined" />
+                          )}
+                        </TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell sx={{ border: 0, py: 0.5, pl: 0 }}>Model:</TableCell>
+                        <TableCell sx={{ border: 0, py: 0.5 }}>
+                          {formData.llm_model ? (
+                            <Chip size="small" label={formData.llm_model} color="primary" variant="outlined" />
+                          ) : defaults.llm_model ? (
+                            <Chip size="small" label={defaults.llm_model} color="secondary" variant="outlined" />
+                          ) : (
+                            <Chip size="small" label="Not Set" color="error" variant="outlined" />
+                          )}
+                        </TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell sx={{ border: 0, py: 0.5, pl: 0 }}>API Key:</TableCell>
+                        <TableCell sx={{ border: 0, py: 0.5 }}>
+                          {formData.llm_api_key ? (
+                            <Chip size="small" icon={<CheckIcon />} label="Config" color="primary" variant="outlined" />
+                          ) : defaults.llm_api_key ? (
+                            <Chip size="small" icon={<CheckIcon />} label="Default" color="secondary" variant="outlined" />
+                          ) : (
+                            <Chip size="small" label="Not Set" color="default" variant="outlined" />
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </Paper>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Paper sx={{ p: 2 }}>
+                  <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+                    SonarQube Settings
+                  </Typography>
+                  <Table size="small">
+                    <TableBody>
+                      <TableRow>
+                        <TableCell sx={{ border: 0, py: 0.5, pl: 0 }}>URL:</TableCell>
+                        <TableCell sx={{ border: 0, py: 0.5 }}>
+                          {formData.sonarqube_url ? (
+                            <Chip size="small" label={formData.sonarqube_url} color="primary" variant="outlined" />
+                          ) : defaults.sonarqube_url ? (
+                            <Chip size="small" label={defaults.sonarqube_url} color="secondary" variant="outlined" />
+                          ) : (
+                            <Chip size="small" label="sonarcloud.io" color="default" variant="outlined" />
+                          )}
+                        </TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell sx={{ border: 0, py: 0.5, pl: 0 }}>Project:</TableCell>
+                        <TableCell sx={{ border: 0, py: 0.5 }}>
+                          {formData.sonarqube_project_key ? (
+                            <Chip size="small" label={formData.sonarqube_project_key} color="primary" variant="outlined" />
+                          ) : (
+                            <Chip size="small" label="Required" color="error" variant="outlined" />
+                          )}
+                        </TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell sx={{ border: 0, py: 0.5, pl: 0 }}>API Key:</TableCell>
+                        <TableCell sx={{ border: 0, py: 0.5 }}>
+                          {formData.sonarqube_api_key ? (
+                            <Chip size="small" icon={<CheckIcon />} label="Config" color="primary" variant="outlined" />
+                          ) : defaults.sonarqube_api_key ? (
+                            <Chip size="small" icon={<CheckIcon />} label="Default" color="secondary" variant="outlined" />
+                          ) : (
+                            <Chip size="small" label="Not Set" color="error" variant="outlined" />
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </Paper>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Paper sx={{ p: 2 }}>
+                  <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+                    GitHub Settings
+                  </Typography>
+                  <Table size="small">
+                    <TableBody>
+                      <TableRow>
+                        <TableCell sx={{ border: 0, py: 0.5, pl: 0 }}>Owner:</TableCell>
+                        <TableCell sx={{ border: 0, py: 0.5 }}>
+                          {formData.github_owner ? (
+                            <Chip size="small" label={formData.github_owner} color="primary" variant="outlined" />
+                          ) : defaults.github_owner ? (
+                            <Chip size="small" label={defaults.github_owner} color="secondary" variant="outlined" />
+                          ) : (
+                            <Chip size="small" label="Not Set" color="error" variant="outlined" />
+                          )}
+                        </TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell sx={{ border: 0, py: 0.5, pl: 0 }}>Repo:</TableCell>
+                        <TableCell sx={{ border: 0, py: 0.5 }}>
+                          {formData.github_repo ? (
+                            <Chip size="small" label={formData.github_repo} color="primary" variant="outlined" />
+                          ) : (
+                            <Chip size="small" label="Required" color="error" variant="outlined" />
+                          )}
+                        </TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell sx={{ border: 0, py: 0.5, pl: 0 }}>API Key:</TableCell>
+                        <TableCell sx={{ border: 0, py: 0.5 }}>
+                          {formData.github_api_key ? (
+                            <Chip size="small" icon={<CheckIcon />} label="Config" color="primary" variant="outlined" />
+                          ) : defaults.github_api_key ? (
+                            <Chip size="small" icon={<CheckIcon />} label="Default" color="secondary" variant="outlined" />
+                          ) : (
+                            <Chip size="small" label="Not Set" color="error" variant="outlined" />
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </Paper>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
       )}
 
       <form onSubmit={handleSubmit}>

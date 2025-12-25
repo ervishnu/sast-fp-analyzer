@@ -14,6 +14,11 @@ import {
   IconButton,
   InputAdornment,
   CircularProgress,
+  Chip,
+  Table,
+  TableBody,
+  TableCell,
+  TableRow,
 } from '@mui/material';
 import {
   Save as SaveIcon,
@@ -21,6 +26,8 @@ import {
   VisibilityOff,
   Settings as SettingsIcon,
   Info as InfoIcon,
+  CheckCircle as CheckIcon,
+  Cancel as NotSetIcon,
 } from '@mui/icons-material';
 import axios from 'axios';
 
@@ -44,6 +51,7 @@ function DefaultSettings() {
     sonarqube_api_key: false,
     github_api_key: false,
   });
+  const [savedSettings, setSavedSettings] = useState(null);  // Store the last saved settings for display
 
   useEffect(() => {
     fetchSettings();
@@ -53,6 +61,7 @@ function DefaultSettings() {
     try {
       const response = await axios.get(`${API_URL}/defaults`);
       const data = response.data;
+      setSavedSettings(data);  // Store the original saved settings
       setSettings({
         llm_url: data.llm_url || '',
         llm_model: data.llm_model || '',
@@ -85,7 +94,8 @@ function DefaultSettings() {
     e.preventDefault();
     setSaving(true);
     try {
-      await axios.put(`${API_URL}/defaults`, settings);
+      const response = await axios.put(`${API_URL}/defaults`, settings);
+      setSavedSettings(response.data);  // Update saved settings display
       setSnackbar({
         open: true,
         message: 'Default settings saved successfully',
@@ -132,6 +142,122 @@ function DefaultSettings() {
           defaults with its own values.
         </Typography>
       </Alert>
+
+      {/* Current Saved Settings Summary */}
+      {savedSettings && (
+        <Card sx={{ mb: 3, backgroundColor: '#f5f5f5' }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom color="primary">
+              Currently Saved Default Settings
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={12} md={4}>
+                <Paper sx={{ p: 2 }}>
+                  <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+                    LLM Settings
+                  </Typography>
+                  <Table size="small">
+                    <TableBody>
+                      <TableRow>
+                        <TableCell sx={{ border: 0, py: 0.5, pl: 0 }}>URL:</TableCell>
+                        <TableCell sx={{ border: 0, py: 0.5 }}>
+                          {savedSettings.llm_url ? (
+                            <Chip size="small" label={savedSettings.llm_url} color="success" variant="outlined" />
+                          ) : (
+                            <Chip size="small" label="Not Set" color="default" variant="outlined" />
+                          )}
+                        </TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell sx={{ border: 0, py: 0.5, pl: 0 }}>Model:</TableCell>
+                        <TableCell sx={{ border: 0, py: 0.5 }}>
+                          {savedSettings.llm_model ? (
+                            <Chip size="small" label={savedSettings.llm_model} color="success" variant="outlined" />
+                          ) : (
+                            <Chip size="small" label="Not Set" color="default" variant="outlined" />
+                          )}
+                        </TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell sx={{ border: 0, py: 0.5, pl: 0 }}>API Key:</TableCell>
+                        <TableCell sx={{ border: 0, py: 0.5 }}>
+                          {savedSettings.llm_api_key ? (
+                            <Chip size="small" icon={<CheckIcon />} label="Set" color="success" variant="outlined" />
+                          ) : (
+                            <Chip size="small" label="Not Set" color="default" variant="outlined" />
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </Paper>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Paper sx={{ p: 2 }}>
+                  <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+                    SonarQube Settings
+                  </Typography>
+                  <Table size="small">
+                    <TableBody>
+                      <TableRow>
+                        <TableCell sx={{ border: 0, py: 0.5, pl: 0 }}>URL:</TableCell>
+                        <TableCell sx={{ border: 0, py: 0.5 }}>
+                          {savedSettings.sonarqube_url ? (
+                            <Chip size="small" label={savedSettings.sonarqube_url} color="success" variant="outlined" />
+                          ) : (
+                            <Chip size="small" label="Not Set" color="default" variant="outlined" />
+                          )}
+                        </TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell sx={{ border: 0, py: 0.5, pl: 0 }}>API Key:</TableCell>
+                        <TableCell sx={{ border: 0, py: 0.5 }}>
+                          {savedSettings.sonarqube_api_key ? (
+                            <Chip size="small" icon={<CheckIcon />} label="Set" color="success" variant="outlined" />
+                          ) : (
+                            <Chip size="small" label="Not Set" color="default" variant="outlined" />
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </Paper>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Paper sx={{ p: 2 }}>
+                  <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+                    GitHub Settings
+                  </Typography>
+                  <Table size="small">
+                    <TableBody>
+                      <TableRow>
+                        <TableCell sx={{ border: 0, py: 0.5, pl: 0 }}>Owner:</TableCell>
+                        <TableCell sx={{ border: 0, py: 0.5 }}>
+                          {savedSettings.github_owner ? (
+                            <Chip size="small" label={savedSettings.github_owner} color="success" variant="outlined" />
+                          ) : (
+                            <Chip size="small" label="Not Set" color="default" variant="outlined" />
+                          )}
+                        </TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell sx={{ border: 0, py: 0.5, pl: 0 }}>API Key:</TableCell>
+                        <TableCell sx={{ border: 0, py: 0.5 }}>
+                          {savedSettings.github_api_key ? (
+                            <Chip size="small" icon={<CheckIcon />} label="Set" color="success" variant="outlined" />
+                          ) : (
+                            <Chip size="small" label="Not Set" color="default" variant="outlined" />
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </Paper>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+      )}
 
       <form onSubmit={handleSubmit}>
         <Grid container spacing={3}>

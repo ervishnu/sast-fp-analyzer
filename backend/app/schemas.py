@@ -34,8 +34,8 @@ class DefaultSettingsUpdate(DefaultSettingsBase):
 class DefaultSettingsResponse(DefaultSettingsBase):
     """Schema for default settings response."""
     id: int
-    created_at: datetime
-    updated_at: datetime
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
     
     class Config:
         from_attributes = True
@@ -149,6 +149,8 @@ class VulnerabilityAnalysisResponse(BaseModel):
     file_path: str
     line_number: Optional[int]
     vulnerability_type: Optional[str]
+    issue_type: Optional[str] = None  # VULNERABILITY, SECURITY_HOTSPOT
+    security_category: Optional[str] = None  # For security hotspots
     original_message: Optional[str]
     severity: Optional[str]
     triage: Optional[str]

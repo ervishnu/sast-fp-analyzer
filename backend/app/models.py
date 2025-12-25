@@ -25,6 +25,7 @@ class DefaultSettings(Base):
     github_api_key = Column(String(500), nullable=True)
     
     # Metadata
+    created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
@@ -94,10 +95,12 @@ class VulnerabilityAnalysis(Base):
     # Vulnerability info from SonarQube
     file_path = Column(String(500), nullable=False)
     line_number = Column(Integer, nullable=True)
-    vulnerability_type = Column(String(200), nullable=True)
+    vulnerability_type = Column(String(200), nullable=True)  # Rule ID
+    issue_type = Column(String(50), nullable=True)  # VULNERABILITY, SECURITY_HOTSPOT
     original_message = Column(Text, nullable=True)
     severity = Column(String(50), nullable=True)
     sonarqube_key = Column(String(200), nullable=True)
+    security_category = Column(String(100), nullable=True)  # For hotspots
     
     # AI Analysis results
     triage = Column(String(50), nullable=True)  # false_positive, true_positive, needs_human_review

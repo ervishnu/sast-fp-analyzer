@@ -341,12 +341,12 @@ function ScanDetail() {
         </Alert>
       )}
 
-      {/* Vulnerability analyses */}
+      {/* Vulnerability and Hotspot analyses */}
       {scan?.vulnerability_analyses && scan.vulnerability_analyses.length > 0 && (
         <Card>
           <CardContent>
             <Typography variant="h6" gutterBottom>
-              Vulnerability Analyses
+              Security Findings (Vulnerabilities & Hotspots)
             </Typography>
 
             <Tabs
@@ -382,6 +382,18 @@ function ScanDetail() {
                       color={triageColors[analysis.triage] || 'default'}
                       size="small"
                     />
+                    {analysis.issue_type === 'SECURITY_HOTSPOT' && (
+                      <Chip
+                        label="Hotspot"
+                        size="small"
+                        sx={{
+                          backgroundColor: '#ff9800',
+                          color: 'white',
+                          fontWeight: 'bold',
+                          fontSize: '0.7rem',
+                        }}
+                      />
+                    )}
                     <Typography sx={{ flexGrow: 1 }} noWrap>
                       {analysis.file_path}
                     </Typography>
@@ -402,9 +414,24 @@ function ScanDetail() {
                 </AccordionSummary>
                 <AccordionDetails>
                   <Grid container spacing={2}>
+                    {analysis.issue_type === 'SECURITY_HOTSPOT' && (
+                      <Grid item xs={12}>
+                        <Paper sx={{ p: 2, backgroundColor: '#fff3e0', mb: 1 }}>
+                          <Typography variant="subtitle2" color="warning.main" gutterBottom>
+                            🔥 Security Hotspot
+                          </Typography>
+                          <Typography variant="body2">
+                            This is a security-sensitive area of code that requires review.
+                            {analysis.security_category && (
+                              <> Category: <strong>{analysis.security_category}</strong></>
+                            )}
+                          </Typography>
+                        </Paper>
+                      </Grid>
+                    )}
                     <Grid item xs={12}>
                       <Typography variant="subtitle2" color="textSecondary">
-                        Vulnerability Type
+                        {analysis.issue_type === 'SECURITY_HOTSPOT' ? 'Rule' : 'Vulnerability Type'}
                       </Typography>
                       <Typography>{analysis.vulnerability_type || 'N/A'}</Typography>
                     </Grid>

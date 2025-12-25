@@ -107,16 +107,16 @@ async def run_scan(scan_id: int, config_id: int, db_url: str):
         )
         llm_service = LLMService(merged["llm_url"], merged["llm_model"], merged["llm_api_key"])
         
-        # Fetch vulnerabilities
-        scan_progress[scan_id]["message"] = "Fetching vulnerabilities from SonarQube..."
-        issues = await sonar_service.fetch_all_vulnerabilities(merged["sonarqube_project_key"])
+        # Fetch vulnerabilities and security hotspots
+        scan_progress[scan_id]["message"] = "Fetching vulnerabilities and security hotspots from SonarQube..."
+        issues = await sonar_service.fetch_all_vulnerabilities(merged["sonarqube_project_key"], include_hotspots=True)
         
         if not issues:
             scan.status = "completed"
             scan.scan_completed_at = datetime.utcnow()
             scan.total_vulnerabilities = 0
             db.commit()
-            scan_progress[scan_id] = {"status": "completed", "progress": 100, "message": "No vulnerabilities found"}
+            scan_progress[scan_id] = {"status": "completed", "progress": 100, "message": "No vulnerabilities or security hotspots found"}
             return
         
         # Group by file for efficient source code fetching
@@ -198,6 +198,8 @@ async def run_scan(scan_id: int, config_id: int, db_url: str):
                         vulnerability_type=vuln.get("rule"),
                         original_message=vuln.get("message"),
                         severity=vuln.get("severity"),
+                        issue_type=vuln.get("issue_type", "VULNERABILITY"),
+                        security_category=vuln.get("security_category"),
                         sonarqube_key=vuln_key,
                         triage="needs_human_review",
                         confidence=0.0,
@@ -233,6 +235,8 @@ async def run_scan(scan_id: int, config_id: int, db_url: str):
                         vulnerability_type=vuln.get("rule"),
                         original_message=vuln.get("message"),
                         severity=vuln.get("severity"),
+                        issue_type=vuln.get("issue_type", "VULNERABILITY"),
+                        security_category=vuln.get("security_category"),
                         sonarqube_key=vuln_key,
                         triage=result.get("triage"),
                         confidence=result.get("confidence"),
@@ -256,6 +260,8 @@ async def run_scan(scan_id: int, config_id: int, db_url: str):
                         vulnerability_type=vuln.get("rule"),
                         original_message=vuln.get("message"),
                         severity=vuln.get("severity"),
+                        issue_type=vuln.get("issue_type", "VULNERABILITY"),
+                        security_category=vuln.get("security_category"),
                         sonarqube_key=vuln_key,
                         triage="needs_human_review",
                         confidence=0.0,
