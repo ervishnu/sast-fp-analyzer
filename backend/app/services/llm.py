@@ -1,0 +1,299 @@
+"""LLM service for analyzing vulnerabilities."""
+import httpx
+import json
+import re
+from typing import Dict, Any, Optional
+import logging
+
+logger = logging.getLogger(__name__)
+
+SYSTEM_PROMPT = """You are a security code review assistant. You will analyze ONE specific vulnerability in the provided source code.
+
+CRITICAL: You MUST respond with ONLY a valid JSON object. No explanations, no markdown, no text before or after the JSON.
+
+Required JSON format:
+{
+  "file_path": "path from input",
+  "vulnerability_key": "the key from input",
+  "triage": "false_positive",
+  "confidence": 0.85,
+  "short_reason": "Input is sanitized using prepared statements",
+  "detailed_explanation": "Line 45 shows the query uses PreparedStatement which prevents SQL injection. The user input from line 30 is passed through validateInput() before reaching the query.",
+  "fix_suggestion": "No fix needed - code is secure",
+  "severity_override": null
+}
+
+RULES:
+- Analyze ONLY the specific vulnerability mentioned (identified by Key and Line Number)
+- "triage" must be exactly one of: "false_positive", "true_positive", "needs_human_review"
+- "confidence" must be a number between 0.0 and 1.0
+- "severity_override" must be one of: "LOW", "MEDIUM", "HIGH", "CRITICAL", or null
+- Reference the specific line numbers in your detailed_explanation
+- All string values must use double quotes
+- Do not include any text outside the JSON object
+
+FALSE POSITIVE indicators:
+- Input is properly sanitized/validated before use
+- Security controls are in place (prepared statements, output encoding, parameterized queries)
+- The data flow doesn't actually reach a dangerous sink
+- The vulnerable function is never called with user input
+- Framework provides automatic protection
+
+TRUE POSITIVE indicators:
+- Unsanitized user input reaches dangerous functions
+- No validation or encoding is applied
+- Known vulnerable patterns without mitigation
+- Security controls are missing or bypassed
+- Direct string concatenation in SQL/commands
+
+NEEDS HUMAN REVIEW:
+- Complex data flows that are hard to trace
+- Partial mitigations that may or may not be sufficient
+- When confidence is below 0.6
+- Cannot determine data source
+
+Start your response with { and end with }"""
+
+
+class LLMService:
+    """Service for interacting with LLM API (LM Studio, OpenAI compatible)."""
+    
+    def __init__(self, base_url: str, model: str, api_key: Optional[str] = None):
+        """Initialize LLM service.
+        
+        Args:
+            base_url: LLM API base URL (e.g., http://localhost:1234/v1)
+            model: Model name to use
+            api_key: API key (optional for local LM Studio)
+        """
+        self.base_url = base_url.rstrip('/')
+        self.model = model
+        self.api_key = api_key
+        self.headers = {
+            "Content-Type": "application/json"
+        }
+        if api_key:
+            self.headers["Authorization"] = f"Bearer {api_key}"
+    
+    def _extract_json(self, content: str) -> Optional[Dict[str, Any]]:
+        """Try multiple strategies to extract JSON from LLM response.
+        
+        Args:
+            content: Raw LLM response content
+            
+        Returns:
+            Parsed JSON dict or None if extraction failed
+        """
+        # Strategy 1: Direct parse (response is already valid JSON)
+        try:
+            return json.loads(content.strip())
+        except json.JSONDecodeError:
+            pass
+        
+        # Strategy 2: Extract from markdown code blocks
+        if "```json" in content:
+            try:
+                json_str = content.split("```json")[1].split("```")[0].strip()
+                return json.loads(json_str)
+            except (IndexError, json.JSONDecodeError):
+                pass
+        
+        if "```" in content:
+            try:
+                parts = content.split("```")
+                if len(parts) >= 2:
+                    json_str = parts[1].strip()
+                    # Remove language identifier if present
+                    if json_str.startswith(("json", "JSON")):
+                        json_str = json_str[4:].strip()
+                    return json.loads(json_str)
+            except (IndexError, json.JSONDecodeError):
+                pass
+        
+        # Strategy 3: Find JSON object using regex
+        try:
+            # Find content between first { and last }
+            match = re.search(r'\{.*\}', content, re.DOTALL)
+            if match:
+                json_str = match.group(0)
+                return json.loads(json_str)
+        except json.JSONDecodeError:
+            pass
+        
+        # Strategy 4: Try to find nested JSON by matching braces
+        try:
+            start_idx = content.find('{')
+            if start_idx != -1:
+                brace_count = 0
+                end_idx = start_idx
+                for i, char in enumerate(content[start_idx:], start_idx):
+                    if char == '{':
+                        brace_count += 1
+                    elif char == '}':
+                        brace_count -= 1
+                        if brace_count == 0:
+                            end_idx = i + 1
+                            break
+                
+                if end_idx > start_idx:
+                    json_str = content[start_idx:end_idx]
+                    return json.loads(json_str)
+        except json.JSONDecodeError:
+            pass
+        
+        return None
+    
+    async def analyze_vulnerability(
+        self, 
+        file_path: str,
+        source_code: str, 
+        vulnerability: Dict[str, Any],
+        timeout: float = 120.0
+    ) -> Dict[str, Any]:
+        """Analyze a single vulnerability using LLM.
+        
+        Args:
+            file_path: Path to the file being analyzed
+            source_code: Source code of the file
+            vulnerability: Single vulnerability dict with key, rule, message, line, severity, etc.
+            timeout: Request timeout in seconds
+            
+        Returns:
+            Dict containing analysis results
+        """
+        # Extract vulnerability details for clearer prompt
+        vuln_key = vulnerability.get("key", "unknown")
+        vuln_rule = vulnerability.get("rule", "unknown")
+        vuln_line = vulnerability.get("line", "unknown")
+        vuln_message = vulnerability.get("message", "No message")
+        vuln_severity = vulnerability.get("severity", "unknown")
+        vuln_type = vulnerability.get("type", "VULNERABILITY")
+        vuln_locations = vulnerability.get("locations", [])
+        
+        user_prompt = f"""File Path: {file_path}
+
+=== VULNERABILITY DETAILS ===
+Key: {vuln_key}
+Rule: {vuln_rule}
+Type: {vuln_type}
+Severity: {vuln_severity}
+Line Number: {vuln_line}
+Message: {vuln_message}
+
+Additional Flow Locations:
+{json.dumps(vuln_locations, indent=2) if vuln_locations else "None"}
+
+=== FULL SOURCE CODE ===
+{source_code}
+
+Please analyze ONLY this specific vulnerability (Key: {vuln_key}) at line {vuln_line} and determine if it is a false positive, true positive, or needs human review."""
+
+        # Store the full prompt for debugging/transparency
+        full_prompt = f"""=== SYSTEM PROMPT ===
+{SYSTEM_PROMPT}
+
+=== USER PROMPT ===
+{user_prompt}"""
+
+        url = f"{self.base_url}/chat/completions"
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": user_prompt}
+            ],
+            "temperature": 0.1,
+            "max_tokens": 2000
+        }
+        
+        try:
+            async with httpx.AsyncClient(timeout=timeout) as client:
+                response = await client.post(url, headers=self.headers, json=payload)
+                response.raise_for_status()
+                
+                data = response.json()
+                content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                
+                # Try to extract JSON using multiple strategies
+                result = self._extract_json(content)
+                
+                if result:
+                    result["raw_response"] = content
+                    result["prompt_sent"] = full_prompt
+                    return result
+                else:
+                    logger.warning(f"Failed to parse LLM response as JSON")
+                    logger.warning(f"Raw content: {content[:500]}...")
+                    return {
+                        "file_path": file_path,
+                        "triage": "needs_human_review",
+                        "confidence": 0.0,
+                        "short_reason": "Failed to parse LLM response as JSON",
+                        "detailed_explanation": f"The LLM returned a response that could not be parsed as JSON.\n\n--- RAW LLM RESPONSE ---\n{content}",
+                        "fix_suggestion": None,
+                        "severity_override": None,
+                        "raw_response": content,
+                        "prompt_sent": full_prompt,
+                        "parse_error": "JSON extraction failed with all strategies"
+                    }
+                    
+        except httpx.TimeoutException:
+            logger.error(f"LLM request timed out for {file_path}")
+            return {
+                "file_path": file_path,
+                "triage": "needs_human_review",
+                "confidence": 0.0,
+                "short_reason": "LLM request timed out",
+                "detailed_explanation": "The LLM request timed out. Please try again or increase timeout.",
+                "fix_suggestion": None,
+                "severity_override": None,
+                "prompt_sent": full_prompt,
+                "error": "timeout"
+            }
+        except Exception as e:
+            logger.error(f"LLM request failed for {file_path}: {e}")
+            return {
+                "file_path": file_path,
+                "triage": "needs_human_review",
+                "confidence": 0.0,
+                "short_reason": f"LLM request failed: {str(e)}",
+                "detailed_explanation": str(e),
+                "fix_suggestion": None,
+                "severity_override": None,
+                "prompt_sent": full_prompt,
+                "error": str(e)
+            }
+    
+    async def test_connection(self) -> bool:
+        """Test connection to LLM API.
+        
+        Returns:
+            True if connection successful
+        """
+        url = f"{self.base_url}/models"
+        
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(url, headers=self.headers)
+                response.raise_for_status()
+                return True
+        except Exception as e:
+            logger.error(f"LLM connection test failed: {e}")
+            # Try chat endpoint as fallback
+            try:
+                test_payload = {
+                    "model": self.model,
+                    "messages": [{"role": "user", "content": "test"}],
+                    "max_tokens": 5
+                }
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    response = await client.post(
+                        f"{self.base_url}/chat/completions",
+                        headers=self.headers,
+                        json=test_payload
+                    )
+                    response.raise_for_status()
+                    return True
+            except Exception as e2:
+                logger.error(f"LLM connection test fallback failed: {e2}")
+                return False
