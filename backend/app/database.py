@@ -52,6 +52,16 @@ def run_migrations():
             "check": "SELECT column_name FROM information_schema.columns WHERE table_name='default_settings' AND column_name='updated_at'",
             "sql": "ALTER TABLE default_settings ADD COLUMN updated_at TIMESTAMP DEFAULT NOW()"
         },
+        {
+            "name": "Add sonarqube_project_name to configurations",
+            "check": "SELECT column_name FROM information_schema.columns WHERE table_name='configurations' AND column_name='sonarqube_project_name'",
+            "sql": "ALTER TABLE configurations ADD COLUMN sonarqube_project_name VARCHAR(200)"
+        },
+        {
+            "name": "Make sonarqube_project_key nullable",
+            "check": None,  # Always try this
+            "sql": "ALTER TABLE configurations ALTER COLUMN sonarqube_project_key DROP NOT NULL"
+        },
     ]
     
     with engine.connect() as conn:

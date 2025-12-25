@@ -23,6 +23,81 @@ class SonarQubeService:
             "Accept": "application/json"
         }
     
+    async def search_projects(self, query: str) -> List[Dict[str, Any]]:
+        """Search for projects by name or key.
+        
+        Args:
+            query: Search query (project name or partial key)
+            
+        Returns:
+            List of matching projects with key, name, and other details
+        """
+        url = f"{self.base_url}/api/projects/search"
+        params = {
+            "q": query,
+            "ps": 50  # Return up to 50 matching projects
+        }
+        
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.get(url, headers=self.headers, params=params)
+            response.raise_for_status()
+            data = response.json()
+            return data.get("components", [])
+    
+    async def get_project_by_name(self, project_name: str) -> Optional[Dict[str, Any]]:
+        """Get a project by its exact name.
+        
+        Args:
+            project_name: The exact project name to find
+            
+        Returns:
+            Project dict with key, name, etc. or None if not found
+        """
+        projects = await self.search_projects(project_name)
+        
+        # Look for exact name match first
+        for project in projects:
+            if project.get("name", "").lower() == project_name.lower():
+                return project
+        
+        # If no exact match, return first result if query matches closely
+        if projects:
+            # Check if the name contains the search query
+            for project in projects:
+                if project_name.lower() in project.get("name", "").lower():
+                    return project
+        
+        return None
+    
+    async def resolve_project_key(
+        self, 
+        project_key: Optional[str] = None, 
+        project_name: Optional[str] = None
+    ) -> Optional[str]:
+        """Resolve a project key from either a key or name.
+        
+        Args:
+            project_key: Direct project key (used if provided)
+            project_name: Project name to look up
+            
+        Returns:
+            The resolved project key, or None if not found
+        """
+        if project_key:
+            return project_key
+        
+        if project_name:
+            project = await self.get_project_by_name(project_name)
+            if project:
+                resolved_key = project.get("key")
+                logger.info(f"Resolved project name '{project_name}' to key '{resolved_key}'")
+                return resolved_key
+            else:
+                logger.warning(f"Could not find project with name '{project_name}'")
+                return None
+        
+        return None
+    
     async def fetch_vulnerabilities(
         self, 
         project_key: str, 

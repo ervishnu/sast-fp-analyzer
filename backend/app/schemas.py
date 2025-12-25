@@ -54,7 +54,8 @@ class ConfigurationBase(BaseModel):
     # SonarQube Settings
     sonarqube_url: Optional[str] = Field(None, description="SonarQube/SonarCloud URL")
     sonarqube_api_key: Optional[str] = Field(None, description="SonarQube API token")
-    sonarqube_project_key: str = Field(..., description="SonarQube project key (required)")
+    sonarqube_project_key: Optional[str] = Field(None, description="SonarQube project key")
+    sonarqube_project_name: Optional[str] = Field(None, description="SonarQube project name (alternative to key)")
     
     # GitHub Settings
     github_owner: Optional[str] = Field(None, description="GitHub repository owner")
@@ -77,6 +78,7 @@ class ConfigurationUpdate(BaseModel):
     sonarqube_url: Optional[str] = None
     sonarqube_api_key: Optional[str] = None
     sonarqube_project_key: Optional[str] = None
+    sonarqube_project_name: Optional[str] = None
     github_owner: Optional[str] = None
     github_repo: Optional[str] = None
     github_api_key: Optional[str] = None
@@ -132,7 +134,8 @@ class ConfigurationListResponse(BaseModel):
     """Schema for listing configurations (without sensitive data)."""
     id: int
     name: str
-    sonarqube_project_key: str
+    sonarqube_project_key: Optional[str] = None
+    sonarqube_project_name: Optional[str] = None
     github_owner: Optional[str] = None
     github_repo: str
     is_active: bool

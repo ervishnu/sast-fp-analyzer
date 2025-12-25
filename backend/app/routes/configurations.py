@@ -31,6 +31,7 @@ def merge_config_with_defaults(config: Configuration, defaults: DefaultSettings)
         "created_at": config.created_at,
         "updated_at": config.updated_at,
         "sonarqube_project_key": config.sonarqube_project_key,
+        "sonarqube_project_name": getattr(config, 'sonarqube_project_name', None),
         "github_repo": config.github_repo,
         "github_branch": config.github_branch or "main",
     }

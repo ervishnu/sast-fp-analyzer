@@ -47,6 +47,7 @@ function ConfigurationForm() {
     sonarqube_url: '',
     sonarqube_api_key: '',
     sonarqube_project_key: '',
+    sonarqube_project_name: '',
     github_owner: '',
     github_repo: '',
     github_api_key: '',
@@ -80,6 +81,8 @@ function ConfigurationForm() {
         llm_api_key: response.data.llm_api_key || '',
         sonarqube_url: response.data.sonarqube_url || '',
         sonarqube_api_key: response.data.sonarqube_api_key || '',
+        sonarqube_project_key: response.data.sonarqube_project_key || '',
+        sonarqube_project_name: response.data.sonarqube_project_name || '',
         github_owner: response.data.github_owner || '',
         github_api_key: response.data.github_api_key || '',
         github_branch: response.data.github_branch || 'main',
@@ -103,6 +106,13 @@ function ConfigurationForm() {
     setSaving(true);
 
     try {
+      // Validate that either project key or project name is provided
+      if (!formData.sonarqube_project_key && !formData.sonarqube_project_name) {
+        setError('Either Project Key or Project Name is required');
+        setSaving(false);
+        return;
+      }
+
       // Convert empty strings to null for optional fields
       const submitData = {
         ...formData,
@@ -111,6 +121,8 @@ function ConfigurationForm() {
         llm_api_key: formData.llm_api_key || null,
         sonarqube_url: formData.sonarqube_url || null,
         sonarqube_api_key: formData.sonarqube_api_key || null,
+        sonarqube_project_key: formData.sonarqube_project_key || null,
+        sonarqube_project_name: formData.sonarqube_project_name || null,
         github_owner: formData.github_owner || null,
         github_api_key: formData.github_api_key || null,
       };
@@ -267,7 +279,9 @@ function ConfigurationForm() {
                         <TableCell sx={{ border: 0, py: 0.5, pl: 0 }}>Project:</TableCell>
                         <TableCell sx={{ border: 0, py: 0.5 }}>
                           {formData.sonarqube_project_key ? (
-                            <Chip size="small" label={formData.sonarqube_project_key} color="primary" variant="outlined" />
+                            <Chip size="small" label={`Key: ${formData.sonarqube_project_key}`} color="primary" variant="outlined" />
+                          ) : formData.sonarqube_project_name ? (
+                            <Chip size="small" label={`Name: ${formData.sonarqube_project_name}`} color="primary" variant="outlined" />
                           ) : (
                             <Chip size="small" label="Required" color="error" variant="outlined" />
                           )}
@@ -414,7 +428,7 @@ function ConfigurationForm() {
               <Typography variant="h6">SonarQube Settings</Typography>
             </Box>
             <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-              Configure the SonarQube/SonarCloud connection. Project Key is required.
+              Configure the SonarQube/SonarCloud connection. Provide either <strong>Project Key</strong> or <strong>Project Name</strong>.
             </Typography>
             <Grid container spacing={2}>
               <Grid item xs={12} md={6}>
@@ -431,24 +445,41 @@ function ConfigurationForm() {
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
-                  required
-                  label="Project Key"
-                  name="sonarqube_project_key"
-                  value={formData.sonarqube_project_key}
-                  onChange={handleChange}
-                  placeholder="my-project"
-                  helperText="Required - unique identifier for your project"
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
                   label={<>API Token <DefaultChip field="sonarqube_api_key" /></>}
                   name="sonarqube_api_key"
                   type="password"
                   value={formData.sonarqube_api_key}
                   onChange={handleChange}
                   helperText={getDefaultValue('sonarqube_api_key') ? "Has default value set" : "Generate token in SonarQube: User > My Account > Security"}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <Divider sx={{ my: 1 }}>
+                  <Chip label="Project Identifier (provide one)" size="small" />
+                </Divider>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Project Key"
+                  name="sonarqube_project_key"
+                  value={formData.sonarqube_project_key}
+                  onChange={handleChange}
+                  placeholder="my-org_my-project"
+                  helperText="Unique identifier for your project (e.g., org_repo-name)"
+                  disabled={!!formData.sonarqube_project_name}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Project Name"
+                  name="sonarqube_project_name"
+                  value={formData.sonarqube_project_name}
+                  onChange={handleChange}
+                  placeholder="My Project"
+                  helperText="Display name of your project (will resolve to key automatically)"
+                  disabled={!!formData.sonarqube_project_key}
                 />
               </Grid>
             </Grid>

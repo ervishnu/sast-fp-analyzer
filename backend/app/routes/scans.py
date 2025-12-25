@@ -35,6 +35,7 @@ def get_merged_config_values(config: Configuration, defaults: DefaultSettings) -
         "sonarqube_url": config.sonarqube_url or (defaults.sonarqube_url if defaults else None) or "https://sonarcloud.io",
         "sonarqube_api_key": config.sonarqube_api_key or (defaults.sonarqube_api_key if defaults else None),
         "sonarqube_project_key": config.sonarqube_project_key,
+        "sonarqube_project_name": getattr(config, 'sonarqube_project_name', None),
         "github_owner": config.github_owner or (defaults.github_owner if defaults else None),
         "github_repo": config.github_repo,
         "github_api_key": config.github_api_key or (defaults.github_api_key if defaults else None),
@@ -71,6 +72,8 @@ async def run_scan(scan_id: int, config_id: int, db_url: str):
             missing_fields.append("LLM Model")
         if not merged["sonarqube_api_key"]:
             missing_fields.append("SonarQube API Key")
+        if not merged["sonarqube_project_key"] and not merged.get("sonarqube_project_name"):
+            missing_fields.append("SonarQube Project Key or Project Name")
         if not merged["github_owner"]:
             missing_fields.append("GitHub Owner")
         if not merged["github_api_key"]:
@@ -107,9 +110,25 @@ async def run_scan(scan_id: int, config_id: int, db_url: str):
         )
         llm_service = LLMService(merged["llm_url"], merged["llm_model"], merged["llm_api_key"])
         
+        # Resolve project key from name if needed
+        project_key = await sonar_service.resolve_project_key(
+            project_key=merged["sonarqube_project_key"],
+            project_name=merged.get("sonarqube_project_name")
+        )
+        
+        if not project_key:
+            scan.status = "failed"
+            scan.error_message = "Could not resolve SonarQube project. Please check the project key or name."
+            scan.scan_completed_at = datetime.utcnow()
+            db.commit()
+            scan_progress[scan_id] = {"status": "failed", "progress": 0, "message": "Could not resolve SonarQube project"}
+            return
+        
+        scan_progress[scan_id]["message"] = f"Resolved project: {project_key}. Fetching vulnerabilities..."
+        
         # Fetch vulnerabilities and security hotspots
         scan_progress[scan_id]["message"] = "Fetching vulnerabilities and security hotspots from SonarQube..."
-        issues = await sonar_service.fetch_all_vulnerabilities(merged["sonarqube_project_key"], include_hotspots=True)
+        issues = await sonar_service.fetch_all_vulnerabilities(project_key, include_hotspots=True)
         
         if not issues:
             scan.status = "completed"

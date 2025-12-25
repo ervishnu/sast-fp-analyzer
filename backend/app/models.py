@@ -44,7 +44,8 @@ class Configuration(Base):
     # SonarQube Settings
     sonarqube_url = Column(String(500), nullable=True)
     sonarqube_api_key = Column(String(500), nullable=True)
-    sonarqube_project_key = Column(String(200), nullable=False)  # Required
+    sonarqube_project_key = Column(String(200), nullable=True)  # Either key or name required
+    sonarqube_project_name = Column(String(200), nullable=True)  # Alternative to project key
     
     # GitHub Settings
     github_owner = Column(String(200), nullable=True)

@@ -161,7 +161,10 @@ function Configurations() {
                     />
                   </Box>
                   <Typography variant="body2" color="textSecondary" gutterBottom>
-                    <strong>SonarQube:</strong> {config.sonarqube_project_key}
+                    <strong>SonarQube:</strong> {config.sonarqube_project_key || config.sonarqube_project_name || 'Not set'}
+                    {config.sonarqube_project_name && !config.sonarqube_project_key && (
+                      <Chip size="small" label="by name" sx={{ ml: 1 }} />
+                    )}
                   </Typography>
                   <Typography variant="body2" color="textSecondary" gutterBottom>
                     <strong>GitHub:</strong> {config.github_owner ? `${config.github_owner}/` : ''}{config.github_repo}
