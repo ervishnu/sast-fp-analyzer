@@ -197,31 +197,49 @@ async def test_configuration(config_id: int, db: Session = Depends(get_db)):
     try:
         sonar_url = merged.get("sonarqube_url") or "https://sonarcloud.io"
         sonar_service = SonarQubeService(sonar_url, merged["sonarqube_api_key"])
-        results["sonarqube"] = await sonar_service.test_connection(config.sonarqube_project_key)
-        if results["sonarqube"]:
-            results["details"]["sonarqube"] = {
-                "success": True,
-                "message": f"Successfully connected to {sonar_url}",
-                "error_type": None,
-                "error_details": None
-            }
+        
+        # Pass both project_key and project_name - the service will resolve as needed
+        test_result = await sonar_service.test_connection(
+            project_key=config.sonarqube_project_key,
+            project_name=config.sonarqube_project_name
+        )
+        
+        results["sonarqube"] = test_result["success"]
+        resolved_key = test_result.get("resolved_key", config.sonarqube_project_key)
+        resolution_info = test_result.get("resolution_info", "")
+        
+        project_display = config.sonarqube_project_key or config.sonarqube_project_name
+        success_message = f"Successfully connected to {sonar_url} and verified project"
+        if config.sonarqube_project_name and not config.sonarqube_project_key:
+            success_message += f" (Name: '{config.sonarqube_project_name}' → Key: '{resolved_key}')"
         else:
-            results["errors"].append("SonarQube: Failed to connect or project not found")
-            results["details"]["sonarqube"] = {
-                "success": False,
-                "message": "Failed to connect or project not found",
-                "error_type": "ConnectionError",
-                "error_details": f"Could not verify project key '{config.sonarqube_project_key}' at {sonar_url}"
-            }
+            success_message += f" '{resolved_key}'"
+        
+        results["details"]["sonarqube"] = {
+            "success": True,
+            "message": success_message,
+            "error_type": None,
+            "error_details": resolution_info,
+            "resolved_project_key": resolved_key
+        }
     except Exception as e:
         error_msg = str(e)
-        error_trace = traceback.format_exc()
+        results["sonarqube"] = False
         results["errors"].append(f"SonarQube: {error_msg}")
+        
+        project_info = ""
+        if config.sonarqube_project_key:
+            project_info = f"Project Key: {config.sonarqube_project_key}"
+        elif config.sonarqube_project_name:
+            project_info = f"Project Name: {config.sonarqube_project_name}"
+        else:
+            project_info = "No project key or name provided"
+        
         results["details"]["sonarqube"] = {
             "success": False,
             "message": error_msg,
             "error_type": type(e).__name__,
-            "error_details": error_trace
+            "error_details": f"URL: {merged.get('sonarqube_url') or 'https://sonarcloud.io'}\n{project_info}\n\nFull Error:\n{traceback.format_exc()}"
         }
     
     # Test GitHub
@@ -233,60 +251,42 @@ async def test_configuration(config_id: int, db: Session = Depends(get_db)):
             config.github_branch or "main"
         )
         results["github"] = await github_service.test_connection()
-        if results["github"]:
-            results["details"]["github"] = {
-                "success": True,
-                "message": f"Successfully connected to {merged['github_owner']}/{config.github_repo}",
-                "error_type": None,
-                "error_details": None
-            }
-        else:
-            results["errors"].append("GitHub: Failed to connect or repository not found")
-            results["details"]["github"] = {
-                "success": False,
-                "message": "Failed to connect or repository not found",
-                "error_type": "ConnectionError",
-                "error_details": f"Could not access repository {merged['github_owner']}/{config.github_repo} on branch {config.github_branch or 'main'}"
-            }
+        results["details"]["github"] = {
+            "success": True,
+            "message": f"Successfully connected to {merged['github_owner']}/{config.github_repo} (branch: {config.github_branch or 'main'})",
+            "error_type": None,
+            "error_details": None
+        }
     except Exception as e:
         error_msg = str(e)
-        error_trace = traceback.format_exc()
+        results["github"] = False
         results["errors"].append(f"GitHub: {error_msg}")
         results["details"]["github"] = {
             "success": False,
             "message": error_msg,
             "error_type": type(e).__name__,
-            "error_details": error_trace
+            "error_details": f"Repository: {merged.get('github_owner')}/{config.github_repo}\nBranch: {config.github_branch or 'main'}\n\nFull Error:\n{traceback.format_exc()}"
         }
     
     # Test LLM
     try:
         llm_service = LLMService(merged["llm_url"], merged["llm_model"], merged.get("llm_api_key"))
         results["llm"] = await llm_service.test_connection()
-        if results["llm"]:
-            results["details"]["llm"] = {
-                "success": True,
-                "message": f"Successfully connected to {merged['llm_url']} using model {merged['llm_model']}",
-                "error_type": None,
-                "error_details": None
-            }
-        else:
-            results["errors"].append("LLM: Failed to connect to LLM service")
-            results["details"]["llm"] = {
-                "success": False,
-                "message": "Failed to connect to LLM service",
-                "error_type": "ConnectionError",
-                "error_details": f"Could not connect to LLM at {merged['llm_url']} with model {merged['llm_model']}"
-            }
+        results["details"]["llm"] = {
+            "success": True,
+            "message": f"Successfully connected to {merged['llm_url']} using model '{merged['llm_model']}'",
+            "error_type": None,
+            "error_details": None
+        }
     except Exception as e:
         error_msg = str(e)
-        error_trace = traceback.format_exc()
+        results["llm"] = False
         results["errors"].append(f"LLM: {error_msg}")
         results["details"]["llm"] = {
             "success": False,
             "message": error_msg,
             "error_type": type(e).__name__,
-            "error_details": error_trace
+            "error_details": f"URL: {merged.get('llm_url')}\nModel: {merged.get('llm_model')}\n\nFull Error:\n{traceback.format_exc()}"
         }
     
     results["all_passed"] = all([results["sonarqube"], results["github"], results["llm"]])

@@ -335,31 +335,100 @@ Please analyze ONLY this specific vulnerability (Key: {vuln_key}) at line {vuln_
         
         Returns:
             True if connection successful
+            
+        Raises:
+            Exception with specific error details if connection fails
         """
         url = f"{self.base_url}/models"
+        models_error = None
         
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
                 response = await client.get(url, headers=self.headers)
+                
+                if response.status_code == 401:
+                    raise Exception(f"Authentication failed (401): Invalid or expired LLM API key.")
+                elif response.status_code == 403:
+                    raise Exception(f"Access forbidden (403): Your API key doesn't have permission to access this LLM service.")
+                    
+                response.raise_for_status()
+                
+                # Check if the model exists in the response
+                try:
+                    data = response.json()
+                    models = data.get("data", []) if isinstance(data, dict) else data
+                    model_ids = [m.get("id", "") for m in models if isinstance(m, dict)]
+                    if self.model and model_ids and self.model not in model_ids:
+                        available_models = ", ".join(model_ids[:5])
+                        if len(model_ids) > 5:
+                            available_models += f" (and {len(model_ids) - 5} more)"
+                        raise Exception(f"Model not found: Model '{self.model}' is not available. Available models: {available_models}")
+                except Exception as model_check_error:
+                    if "Model not found" in str(model_check_error):
+                        raise
+                    # If we can't check models, that's okay - connection worked
+                    pass
+                    
+                return True
+                
+        except httpx.ConnectError as e:
+            models_error = f"Connection error: Unable to connect to LLM API at '{self.base_url}'. Please check if the LLM server (e.g., LM Studio) is running and the URL is correct."
+        except httpx.TimeoutException as e:
+            models_error = f"Connection timeout: LLM API at '{self.base_url}' did not respond within 10 seconds."
+        except Exception as e:
+            if "Authentication failed" in str(e) or "Access forbidden" in str(e) or "Model not found" in str(e):
+                raise
+            models_error = str(e)
+        
+        # Try chat endpoint as fallback
+        logger.info(f"LLM /models endpoint failed, trying /chat/completions fallback")
+        try:
+            test_payload = {
+                "model": self.model,
+                "messages": [{"role": "user", "content": "test"}],
+                "max_tokens": 5
+            }
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                response = await client.post(
+                    f"{self.base_url}/chat/completions",
+                    headers=self.headers,
+                    json=test_payload
+                )
+                
+                if response.status_code == 401:
+                    raise Exception(f"Authentication failed (401): Invalid or expired LLM API key.")
+                elif response.status_code == 403:
+                    raise Exception(f"Access forbidden (403): Your API key doesn't have permission to access this LLM service.")
+                elif response.status_code == 404:
+                    raise Exception(f"LLM endpoint not found (404): The chat/completions endpoint is not available at '{self.base_url}'. Please verify the URL.")
+                elif response.status_code == 400:
+                    try:
+                        error_data = response.json()
+                        error_msg = error_data.get("error", {}).get("message", str(error_data))
+                        if "model" in error_msg.lower():
+                            raise Exception(f"Model error: {error_msg}")
+                    except:
+                        pass
+                
                 response.raise_for_status()
                 return True
-        except Exception as e:
-            logger.error(f"LLM connection test failed: {e}")
-            # Try chat endpoint as fallback
+                
+        except httpx.ConnectError as e:
+            raise Exception(f"Connection error: Unable to connect to LLM API at '{self.base_url}'. Please check if the LLM server (e.g., LM Studio) is running and the URL is correct. Details: {str(e)}")
+        except httpx.TimeoutException as e:
+            raise Exception(f"Connection timeout: LLM API at '{self.base_url}' did not respond within 15 seconds. The server may be overloaded or not running.")
+        except httpx.HTTPStatusError as e:
             try:
-                test_payload = {
-                    "model": self.model,
-                    "messages": [{"role": "user", "content": "test"}],
-                    "max_tokens": 5
-                }
-                async with httpx.AsyncClient(timeout=10.0) as client:
-                    response = await client.post(
-                        f"{self.base_url}/chat/completions",
-                        headers=self.headers,
-                        json=test_payload
-                    )
-                    response.raise_for_status()
-                    return True
-            except Exception as e2:
-                logger.error(f"LLM connection test fallback failed: {e2}")
-                return False
+                error_data = e.response.json()
+                error_msg = error_data.get("error", {}).get("message", e.response.text[:200])
+            except:
+                error_msg = e.response.text[:200] if e.response.text else str(e)
+            raise Exception(f"HTTP error {e.response.status_code}: {error_msg}")
+        except Exception as e:
+            if "Authentication failed" in str(e) or "Access forbidden" in str(e) or "Model" in str(e) or "Connection" in str(e) or "endpoint not found" in str(e):
+                raise
+            logger.error(f"LLM connection test failed: {e}")
+            # Include the original models endpoint error for context
+            if models_error:
+                raise Exception(f"LLM connection failed. Models endpoint: {models_error}. Chat endpoint: {str(e)}")
+            raise Exception(f"LLM connection failed: {str(e)}")

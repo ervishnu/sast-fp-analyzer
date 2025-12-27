@@ -98,17 +98,53 @@ class GitHubService:
         
         Returns:
             True if connection successful and repo accessible
+            
+        Raises:
+            Exception with specific error details if connection fails
         """
         url = f"{self.base_url}/repos/{self.owner}/{self.repo}"
         
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.get(url, headers=self.headers)
+                
+                if response.status_code == 401:
+                    raise Exception(f"Authentication failed (401): Invalid or expired GitHub API key. Please check your Personal Access Token.")
+                elif response.status_code == 403:
+                    error_msg = "Access forbidden (403): "
+                    try:
+                        error_data = response.json()
+                        if "rate limit" in str(error_data).lower():
+                            error_msg += "GitHub API rate limit exceeded. Please wait or use a different token."
+                        else:
+                            error_msg += error_data.get("message", "You don't have permission to access this repository.")
+                    except:
+                        error_msg += "You don't have permission to access this repository. Check token scopes."
+                    raise Exception(error_msg)
+                elif response.status_code == 404:
+                    raise Exception(f"Repository not found (404): '{self.owner}/{self.repo}' does not exist or is not accessible with the provided token.")
+                
                 response.raise_for_status()
+                
+                # Also verify branch exists
+                branch_url = f"{self.base_url}/repos/{self.owner}/{self.repo}/branches/{self.branch}"
+                branch_response = await client.get(branch_url, headers=self.headers)
+                if branch_response.status_code == 404:
+                    raise Exception(f"Branch not found (404): Branch '{self.branch}' does not exist in repository '{self.owner}/{self.repo}'.")
+                
                 return True
+                
+        except httpx.ConnectError as e:
+            raise Exception(f"Connection error: Unable to connect to GitHub API. Please check your network connection. Details: {str(e)}")
+        except httpx.TimeoutException as e:
+            raise Exception(f"Connection timeout: GitHub API did not respond within 30 seconds. Please try again.")
+        except httpx.HTTPStatusError as e:
+            raise Exception(f"HTTP error {e.response.status_code}: {e.response.text[:200] if e.response.text else 'Unknown error'}")
         except Exception as e:
+            if "Authentication failed" in str(e) or "Access forbidden" in str(e) or "not found" in str(e) or "Connection" in str(e):
+                raise  # Re-raise our custom exceptions
             logger.error(f"GitHub connection test failed: {e}")
-            return False
+            raise Exception(f"GitHub connection failed: {str(e)}")
     
     def get_code_snippet(self, content: str, line_number: int, context_lines: int = 10) -> str:
         """Extract a code snippet around a specific line.

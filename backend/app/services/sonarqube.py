@@ -346,18 +346,106 @@ class SonarQubeService:
         
         return grouped
     
-    async def test_connection(self, project_key: str) -> bool:
+    async def test_connection(self, project_key: Optional[str] = None, project_name: Optional[str] = None) -> dict:
         """Test connection to SonarQube and verify project exists.
         
         Args:
-            project_key: The SonarQube project key
+            project_key: The SonarQube project key (optional if project_name provided)
+            project_name: The SonarQube project name to resolve (optional if project_key provided)
             
         Returns:
-            True if connection successful and project exists
+            Dict with success status and resolved project key
+            
+        Raises:
+            Exception with specific error details if connection fails
         """
+        resolved_key = None
+        resolution_info = None
+        
+        # First, test basic authentication by trying to access the API
         try:
-            data = await self.fetch_vulnerabilities(project_key, page=1, page_size=1)
-            return True
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                # Test authentication first with a simple API call
+                auth_url = f"{self.base_url}/api/authentication/validate"
+                auth_response = await client.get(auth_url, headers=self.headers)
+                
+                if auth_response.status_code == 401:
+                    raise Exception("Authentication failed (401): Invalid or expired SonarQube API token. Please generate a new token in User > My Account > Security.")
+                
+                # Resolve project key from name if needed
+                if project_key:
+                    resolved_key = project_key
+                    resolution_info = f"Using provided project key: '{project_key}'"
+                elif project_name:
+                    # Try to resolve project name to key
+                    project = await self.get_project_by_name(project_name)
+                    if project:
+                        resolved_key = project.get("key")
+                        resolution_info = f"Resolved project name '{project_name}' to key '{resolved_key}'"
+                    else:
+                        raise Exception(f"Project not found: Could not find a project with name '{project_name}'. Please verify the project name is correct or use the project key instead.")
+                else:
+                    raise Exception("No project identifier provided: Please provide either a project key or project name.")
+                
+                # Now verify the project exists and is accessible
+                url = f"{self.base_url}/api/issues/search"
+                params = {
+                    "componentKeys": resolved_key,
+                    "types": "VULNERABILITY",
+                    "p": 1,
+                    "ps": 1
+                }
+                
+                response = await client.get(url, headers=self.headers, params=params)
+                
+                if response.status_code == 401:
+                    raise Exception("Authentication failed (401): Invalid or expired SonarQube API token. Please generate a new token in User > My Account > Security.")
+                elif response.status_code == 403:
+                    try:
+                        error_data = response.json()
+                        error_msg = error_data.get("errors", [{}])[0].get("msg", "Access denied")
+                    except:
+                        error_msg = "Access denied"
+                    raise Exception(f"Access forbidden (403): {error_msg}. Check that your token has the required permissions.")
+                elif response.status_code == 404:
+                    raise Exception(f"Project not found (404): Project key '{resolved_key}' does not exist or you don't have access to it.")
+                
+                response.raise_for_status()
+                
+                # Check if the project actually exists in the response
+                data = response.json()
+                # If we get an empty result, the project might not exist - do additional verification
+                if data.get("total", 0) == 0 and data.get("issues", []) == []:
+                    # Try to verify project exists by checking project API
+                    project_url = f"{self.base_url}/api/projects/search"
+                    project_params = {"q": resolved_key}
+                    project_response = await client.get(project_url, headers=self.headers, params=project_params)
+                    if project_response.status_code == 200:
+                        project_data = project_response.json()
+                        components = project_data.get("components", [])
+                        project_exists = any(c.get("key") == resolved_key for c in components)
+                        if not project_exists:
+                            raise Exception(f"Project not found: No project with key '{resolved_key}' was found. Please verify the project key is correct.")
+                
+                return {
+                    "success": True,
+                    "resolved_key": resolved_key,
+                    "resolution_info": resolution_info
+                }
+                
+        except httpx.ConnectError as e:
+            raise Exception(f"Connection error: Unable to connect to SonarQube at '{self.base_url}'. Please check the URL and your network connection. Details: {str(e)}")
+        except httpx.TimeoutException as e:
+            raise Exception(f"Connection timeout: SonarQube at '{self.base_url}' did not respond within 30 seconds. Please check if the server is running.")
+        except httpx.HTTPStatusError as e:
+            try:
+                error_data = e.response.json()
+                error_msg = error_data.get("errors", [{}])[0].get("msg", str(e))
+            except:
+                error_msg = e.response.text[:200] if e.response.text else str(e)
+            raise Exception(f"HTTP error {e.response.status_code}: {error_msg}")
         except Exception as e:
+            if "Authentication failed" in str(e) or "Access forbidden" in str(e) or "not found" in str(e) or "Connection" in str(e) or "No project identifier" in str(e):
+                raise  # Re-raise our custom exceptions
             logger.error(f"SonarQube connection test failed: {e}")
-            return False
+            raise Exception(f"SonarQube connection failed: {str(e)}")
