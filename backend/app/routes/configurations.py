@@ -149,6 +149,8 @@ async def delete_configuration(config_id: int, db: Session = Depends(get_db)):
 @router.post("/{config_id}/test")
 async def test_configuration(config_id: int, db: Session = Depends(get_db)):
     """Test all connections for a configuration."""
+    import traceback
+    
     config = db.query(Configuration).filter(Configuration.id == config_id).first()
     if not config:
         raise HTTPException(status_code=404, detail="Configuration not found")
@@ -161,7 +163,12 @@ async def test_configuration(config_id: int, db: Session = Depends(get_db)):
         "sonarqube": False,
         "github": False,
         "llm": False,
-        "errors": []
+        "errors": [],
+        "details": {
+            "sonarqube": {"success": False, "message": "", "error_type": None, "error_details": None},
+            "github": {"success": False, "message": "", "error_type": None, "error_details": None},
+            "llm": {"success": False, "message": "", "error_type": None, "error_details": None}
+        }
     }
     
     # Check required fields
@@ -178,7 +185,11 @@ async def test_configuration(config_id: int, db: Session = Depends(get_db)):
         missing_fields.append("GitHub API Key")
     
     if missing_fields:
-        results["errors"].append(f"Missing required fields (not set in config or defaults): {', '.join(missing_fields)}")
+        error_msg = f"Missing required fields (not set in config or defaults): {', '.join(missing_fields)}"
+        results["errors"].append(error_msg)
+        results["details"]["sonarqube"]["message"] = "Missing SonarQube API Key" if "SonarQube API Key" in missing_fields else "Skipped due to missing fields"
+        results["details"]["github"]["message"] = "Missing GitHub Owner or API Key" if any(f in missing_fields for f in ["GitHub Owner", "GitHub API Key"]) else "Skipped due to missing fields"
+        results["details"]["llm"]["message"] = "Missing LLM URL or Model" if any(f in missing_fields for f in ["LLM URL", "LLM Model"]) else "Skipped due to missing fields"
         results["all_passed"] = False
         return results
     
@@ -187,10 +198,31 @@ async def test_configuration(config_id: int, db: Session = Depends(get_db)):
         sonar_url = merged.get("sonarqube_url") or "https://sonarcloud.io"
         sonar_service = SonarQubeService(sonar_url, merged["sonarqube_api_key"])
         results["sonarqube"] = await sonar_service.test_connection(config.sonarqube_project_key)
-        if not results["sonarqube"]:
+        if results["sonarqube"]:
+            results["details"]["sonarqube"] = {
+                "success": True,
+                "message": f"Successfully connected to {sonar_url}",
+                "error_type": None,
+                "error_details": None
+            }
+        else:
             results["errors"].append("SonarQube: Failed to connect or project not found")
+            results["details"]["sonarqube"] = {
+                "success": False,
+                "message": "Failed to connect or project not found",
+                "error_type": "ConnectionError",
+                "error_details": f"Could not verify project key '{config.sonarqube_project_key}' at {sonar_url}"
+            }
     except Exception as e:
-        results["errors"].append(f"SonarQube: {str(e)}")
+        error_msg = str(e)
+        error_trace = traceback.format_exc()
+        results["errors"].append(f"SonarQube: {error_msg}")
+        results["details"]["sonarqube"] = {
+            "success": False,
+            "message": error_msg,
+            "error_type": type(e).__name__,
+            "error_details": error_trace
+        }
     
     # Test GitHub
     try:
@@ -201,19 +233,61 @@ async def test_configuration(config_id: int, db: Session = Depends(get_db)):
             config.github_branch or "main"
         )
         results["github"] = await github_service.test_connection()
-        if not results["github"]:
+        if results["github"]:
+            results["details"]["github"] = {
+                "success": True,
+                "message": f"Successfully connected to {merged['github_owner']}/{config.github_repo}",
+                "error_type": None,
+                "error_details": None
+            }
+        else:
             results["errors"].append("GitHub: Failed to connect or repository not found")
+            results["details"]["github"] = {
+                "success": False,
+                "message": "Failed to connect or repository not found",
+                "error_type": "ConnectionError",
+                "error_details": f"Could not access repository {merged['github_owner']}/{config.github_repo} on branch {config.github_branch or 'main'}"
+            }
     except Exception as e:
-        results["errors"].append(f"GitHub: {str(e)}")
+        error_msg = str(e)
+        error_trace = traceback.format_exc()
+        results["errors"].append(f"GitHub: {error_msg}")
+        results["details"]["github"] = {
+            "success": False,
+            "message": error_msg,
+            "error_type": type(e).__name__,
+            "error_details": error_trace
+        }
     
     # Test LLM
     try:
         llm_service = LLMService(merged["llm_url"], merged["llm_model"], merged.get("llm_api_key"))
         results["llm"] = await llm_service.test_connection()
-        if not results["llm"]:
+        if results["llm"]:
+            results["details"]["llm"] = {
+                "success": True,
+                "message": f"Successfully connected to {merged['llm_url']} using model {merged['llm_model']}",
+                "error_type": None,
+                "error_details": None
+            }
+        else:
             results["errors"].append("LLM: Failed to connect to LLM service")
+            results["details"]["llm"] = {
+                "success": False,
+                "message": "Failed to connect to LLM service",
+                "error_type": "ConnectionError",
+                "error_details": f"Could not connect to LLM at {merged['llm_url']} with model {merged['llm_model']}"
+            }
     except Exception as e:
-        results["errors"].append(f"LLM: {str(e)}")
+        error_msg = str(e)
+        error_trace = traceback.format_exc()
+        results["errors"].append(f"LLM: {error_msg}")
+        results["details"]["llm"] = {
+            "success": False,
+            "message": error_msg,
+            "error_type": type(e).__name__,
+            "error_details": error_trace
+        }
     
     results["all_passed"] = all([results["sonarqube"], results["github"], results["llm"]])
     
