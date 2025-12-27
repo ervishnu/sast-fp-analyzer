@@ -122,8 +122,9 @@ function DefaultSettings() {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-        <CircularProgress />
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '50vh', gap: 2 }}>
+        <CircularProgress size={48} />
+        <Typography variant="body2" sx={{ color: 'text.secondary' }}>Loading settings...</Typography>
       </Box>
     );
   }
@@ -131,8 +132,19 @@ function DefaultSettings() {
   return (
     <Box>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <SettingsIcon sx={{ mr: 2, fontSize: 32 }} color="primary" />
-        <Typography variant="h4">Default Settings</Typography>
+        <SettingsIcon sx={{ mr: 2, fontSize: 32, color: '#00d4ff' }} />
+        <Typography 
+          variant="h4"
+          sx={{
+            fontWeight: 700,
+            background: 'linear-gradient(90deg, #00d4ff 0%, #7c4dff 100%)',
+            backgroundClip: 'text',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+          }}
+        >
+          Default Settings
+        </Typography>
       </Box>
 
       <Alert severity="info" sx={{ mb: 3 }}>
@@ -145,21 +157,21 @@ function DefaultSettings() {
 
       {/* Current Saved Settings Summary */}
       {savedSettings && (
-        <Card sx={{ mb: 3, backgroundColor: '#f5f5f5' }}>
+        <Card sx={{ mb: 3, background: 'rgba(0, 212, 255, 0.05)', border: '1px solid rgba(0, 212, 255, 0.2)' }}>
           <CardContent>
-            <Typography variant="h6" gutterBottom color="primary">
+            <Typography variant="h6" gutterBottom sx={{ color: '#00d4ff' }}>
               Currently Saved Default Settings
             </Typography>
             <Grid container spacing={2}>
               <Grid item xs={12} md={4}>
-                <Paper sx={{ p: 2 }}>
-                  <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+                <Paper sx={{ p: 2, background: 'rgba(0, 212, 255, 0.03)', border: '1px solid rgba(0, 212, 255, 0.1)' }}>
+                  <Typography variant="subtitle2" sx={{ color: '#90caf9' }} gutterBottom>
                     LLM Settings
                   </Typography>
                   <Table size="small">
                     <TableBody>
                       <TableRow>
-                        <TableCell sx={{ border: 0, py: 0.5, pl: 0 }}>URL:</TableCell>
+                        <TableCell sx={{ border: 0, py: 0.5, pl: 0, color: '#e3f2fd' }}>URL:</TableCell>
                         <TableCell sx={{ border: 0, py: 0.5 }}>
                           {savedSettings.llm_url ? (
                             <Chip size="small" label={savedSettings.llm_url} color="success" variant="outlined" />
@@ -169,7 +181,7 @@ function DefaultSettings() {
                         </TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell sx={{ border: 0, py: 0.5, pl: 0 }}>Model:</TableCell>
+                        <TableCell sx={{ border: 0, py: 0.5, pl: 0, color: '#e3f2fd' }}>Model:</TableCell>
                         <TableCell sx={{ border: 0, py: 0.5 }}>
                           {savedSettings.llm_model ? (
                             <Chip size="small" label={savedSettings.llm_model} color="success" variant="outlined" />
@@ -179,7 +191,7 @@ function DefaultSettings() {
                         </TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell sx={{ border: 0, py: 0.5, pl: 0 }}>API Key:</TableCell>
+                        <TableCell sx={{ border: 0, py: 0.5, pl: 0, color: '#e3f2fd' }}>API Key:</TableCell>
                         <TableCell sx={{ border: 0, py: 0.5 }}>
                           {savedSettings.llm_api_key ? (
                             <Chip size="small" icon={<CheckIcon />} label="Set" color="success" variant="outlined" />
@@ -193,14 +205,14 @@ function DefaultSettings() {
                 </Paper>
               </Grid>
               <Grid item xs={12} md={4}>
-                <Paper sx={{ p: 2 }}>
-                  <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+                <Paper sx={{ p: 2, background: 'rgba(0, 212, 255, 0.03)', border: '1px solid rgba(0, 212, 255, 0.1)' }}>
+                  <Typography variant="subtitle2" sx={{ color: '#90caf9' }} gutterBottom>
                     SonarQube Settings
                   </Typography>
                   <Table size="small">
                     <TableBody>
                       <TableRow>
-                        <TableCell sx={{ border: 0, py: 0.5, pl: 0 }}>URL:</TableCell>
+                        <TableCell sx={{ border: 0, py: 0.5, pl: 0, color: '#e3f2fd' }}>URL:</TableCell>
                         <TableCell sx={{ border: 0, py: 0.5 }}>
                           {savedSettings.sonarqube_url ? (
                             <Chip size="small" label={savedSettings.sonarqube_url} color="success" variant="outlined" />
@@ -210,7 +222,7 @@ function DefaultSettings() {
                         </TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell sx={{ border: 0, py: 0.5, pl: 0 }}>API Key:</TableCell>
+                        <TableCell sx={{ border: 0, py: 0.5, pl: 0, color: '#e3f2fd' }}>API Key:</TableCell>
                         <TableCell sx={{ border: 0, py: 0.5 }}>
                           {savedSettings.sonarqube_api_key ? (
                             <Chip size="small" icon={<CheckIcon />} label="Set" color="success" variant="outlined" />
@@ -224,14 +236,14 @@ function DefaultSettings() {
                 </Paper>
               </Grid>
               <Grid item xs={12} md={4}>
-                <Paper sx={{ p: 2 }}>
-                  <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+                <Paper sx={{ p: 2, background: 'rgba(0, 212, 255, 0.03)', border: '1px solid rgba(0, 212, 255, 0.1)' }}>
+                  <Typography variant="subtitle2" sx={{ color: '#90caf9' }} gutterBottom>
                     GitHub Settings
                   </Typography>
                   <Table size="small">
                     <TableBody>
                       <TableRow>
-                        <TableCell sx={{ border: 0, py: 0.5, pl: 0 }}>Owner:</TableCell>
+                        <TableCell sx={{ border: 0, py: 0.5, pl: 0, color: '#e3f2fd' }}>Owner:</TableCell>
                         <TableCell sx={{ border: 0, py: 0.5 }}>
                           {savedSettings.github_owner ? (
                             <Chip size="small" label={savedSettings.github_owner} color="success" variant="outlined" />
@@ -241,7 +253,7 @@ function DefaultSettings() {
                         </TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell sx={{ border: 0, py: 0.5, pl: 0 }}>API Key:</TableCell>
+                        <TableCell sx={{ border: 0, py: 0.5, pl: 0, color: '#e3f2fd' }}>API Key:</TableCell>
                         <TableCell sx={{ border: 0, py: 0.5 }}>
                           {savedSettings.github_api_key ? (
                             <Chip size="small" icon={<CheckIcon />} label="Set" color="success" variant="outlined" />
@@ -263,15 +275,15 @@ function DefaultSettings() {
         <Grid container spacing={3}>
           {/* LLM Settings */}
           <Grid item xs={12}>
-            <Card>
+            <Card sx={{ background: 'linear-gradient(145deg, #0d2137 0%, #132f4c 100%)', border: '1px solid rgba(0, 212, 255, 0.1)' }}>
               <CardContent>
-                <Typography variant="h6" gutterBottom color="primary">
+                <Typography variant="h6" gutterBottom sx={{ color: '#00d4ff' }}>
                   LLM Settings
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                <Typography variant="body2" sx={{ color: '#90caf9', mb: 2 }}>
                   Default settings for the AI/LLM service used for vulnerability analysis
                 </Typography>
-                <Divider sx={{ mb: 2 }} />
+                <Divider sx={{ mb: 2, borderColor: 'rgba(0, 212, 255, 0.2)' }} />
                 <Grid container spacing={2}>
                   <Grid item xs={12} md={6}>
                     <TextField
@@ -323,15 +335,15 @@ function DefaultSettings() {
 
           {/* SonarQube Settings */}
           <Grid item xs={12}>
-            <Card>
+            <Card sx={{ background: 'linear-gradient(145deg, #0d2137 0%, #132f4c 100%)', border: '1px solid rgba(0, 212, 255, 0.1)' }}>
               <CardContent>
-                <Typography variant="h6" gutterBottom color="primary">
+                <Typography variant="h6" gutterBottom sx={{ color: '#00d4ff' }}>
                   SonarQube Settings
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                <Typography variant="body2" sx={{ color: '#90caf9', mb: 2 }}>
                   Default SonarQube/SonarCloud connection settings (project key must be set per configuration)
                 </Typography>
-                <Divider sx={{ mb: 2 }} />
+                <Divider sx={{ mb: 2, borderColor: 'rgba(0, 212, 255, 0.2)' }} />
                 <Grid container spacing={2}>
                   <Grid item xs={12} md={6}>
                     <TextField
@@ -372,15 +384,15 @@ function DefaultSettings() {
 
           {/* GitHub Settings */}
           <Grid item xs={12}>
-            <Card>
+            <Card sx={{ background: 'linear-gradient(145deg, #0d2137 0%, #132f4c 100%)', border: '1px solid rgba(0, 212, 255, 0.1)' }}>
               <CardContent>
-                <Typography variant="h6" gutterBottom color="primary">
+                <Typography variant="h6" gutterBottom sx={{ color: '#00d4ff' }}>
                   GitHub Settings
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                <Typography variant="body2" sx={{ color: '#90caf9', mb: 2 }}>
                   Default GitHub connection settings (repository and branch must be set per configuration)
                 </Typography>
-                <Divider sx={{ mb: 2 }} />
+                <Divider sx={{ mb: 2, borderColor: 'rgba(0, 212, 255, 0.2)' }} />
                 <Grid container spacing={2}>
                   <Grid item xs={12} md={6}>
                     <TextField

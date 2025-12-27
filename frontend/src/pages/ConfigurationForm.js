@@ -154,9 +154,14 @@ function ConfigurationForm() {
         <Chip
           size="small"
           label="Has Default"
-          color="info"
-          variant="outlined"
-          sx={{ ml: 1 }}
+          sx={{ 
+            ml: 1, 
+            backgroundColor: '#00b0ff',
+            color: '#ffffff',
+            fontWeight: 600,
+            fontSize: '0.7rem',
+            height: 20,
+          }}
         />
       </Tooltip>
     );
@@ -164,8 +169,9 @@ function ConfigurationForm() {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-        <CircularProgress />
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '50vh', gap: 2 }}>
+        <CircularProgress size={48} />
+        <Typography variant="body2" sx={{ color: 'text.secondary' }}>Loading configuration...</Typography>
       </Box>
     );
   }
@@ -173,10 +179,19 @@ function ConfigurationForm() {
   return (
     <Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-        <Button startIcon={<BackIcon />} onClick={() => navigate('/configurations')}>
+        <Button startIcon={<BackIcon />} onClick={() => navigate('/configurations')} sx={{ color: '#90caf9' }}>
           Back
         </Button>
-        <Typography variant="h4">
+        <Typography 
+          variant="h4"
+          sx={{
+            fontWeight: 700,
+            background: 'linear-gradient(90deg, #00d4ff 0%, #7c4dff 100%)',
+            backgroundClip: 'text',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+          }}
+        >
           {isEditing ? 'Edit Configuration' : 'New Configuration'}
         </Typography>
       </Box>
@@ -190,34 +205,34 @@ function ConfigurationForm() {
       {defaults && (
         <Alert severity="info" sx={{ mb: 2 }}>
           <Typography variant="body2">
-            Fields marked with <Chip size="small" label="Has Default" color="info" variant="outlined" sx={{ mx: 0.5 }} /> 
-            will use default settings if left empty. Configure defaults in the <strong>Default Settings</strong> page.
+            Fields marked with <Chip size="small" label="Has Default" sx={{ mx: 0.5, backgroundColor: '#00b0ff', color: '#ffffff', fontWeight: 600, fontSize: '0.7rem', height: 20 }} /> 
+            will use default settings if left empty. Configure defaults in the <strong style={{ color: '#00d4ff' }}>Default Settings</strong> page.
           </Typography>
         </Alert>
       )}
 
       {/* Effective Settings Summary - Shows what will actually be used */}
       {defaults && (
-        <Card sx={{ mb: 3, backgroundColor: '#e3f2fd' }}>
+        <Card sx={{ mb: 3, background: 'rgba(0, 212, 255, 0.05)', border: '1px solid rgba(0, 212, 255, 0.2)' }}>
           <CardContent>
-            <Typography variant="h6" gutterBottom color="primary">
+            <Typography variant="h6" gutterBottom sx={{ color: '#00d4ff' }}>
               Effective Settings (What Will Be Used)
             </Typography>
-            <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+            <Typography variant="body2" sx={{ color: '#90caf9', mb: 2 }}>
               This shows the actual values that will be used when running a scan. 
               <Chip size="small" label="Config" color="primary" variant="outlined" sx={{ mx: 0.5 }} /> = from this configuration,
               <Chip size="small" label="Default" color="secondary" variant="outlined" sx={{ mx: 0.5 }} /> = from default settings.
             </Typography>
             <Grid container spacing={2}>
               <Grid item xs={12} md={4}>
-                <Paper sx={{ p: 2 }}>
-                  <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+                <Paper sx={{ p: 2, background: 'rgba(0, 212, 255, 0.03)', border: '1px solid rgba(0, 212, 255, 0.1)' }}>
+                  <Typography variant="subtitle2" sx={{ color: '#90caf9' }} gutterBottom>
                     LLM Settings
                   </Typography>
                   <Table size="small">
                     <TableBody>
                       <TableRow>
-                        <TableCell sx={{ border: 0, py: 0.5, pl: 0 }}>URL:</TableCell>
+                        <TableCell sx={{ border: 0, py: 0.5, pl: 0, color: '#e3f2fd' }}>URL:</TableCell>
                         <TableCell sx={{ border: 0, py: 0.5 }}>
                           {formData.llm_url ? (
                             <Chip size="small" label={formData.llm_url} color="primary" variant="outlined" title="From Config" />
@@ -229,7 +244,7 @@ function ConfigurationForm() {
                         </TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell sx={{ border: 0, py: 0.5, pl: 0 }}>Model:</TableCell>
+                        <TableCell sx={{ border: 0, py: 0.5, pl: 0, color: '#e3f2fd' }}>Model:</TableCell>
                         <TableCell sx={{ border: 0, py: 0.5 }}>
                           {formData.llm_model ? (
                             <Chip size="small" label={formData.llm_model} color="primary" variant="outlined" />
@@ -241,7 +256,7 @@ function ConfigurationForm() {
                         </TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell sx={{ border: 0, py: 0.5, pl: 0 }}>API Key:</TableCell>
+                        <TableCell sx={{ border: 0, py: 0.5, pl: 0, color: '#e3f2fd' }}>API Key:</TableCell>
                         <TableCell sx={{ border: 0, py: 0.5 }}>
                           {formData.llm_api_key ? (
                             <Chip size="small" icon={<CheckIcon />} label="Config" color="primary" variant="outlined" />
@@ -257,14 +272,14 @@ function ConfigurationForm() {
                 </Paper>
               </Grid>
               <Grid item xs={12} md={4}>
-                <Paper sx={{ p: 2 }}>
-                  <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+                <Paper sx={{ p: 2, background: 'rgba(0, 212, 255, 0.03)', border: '1px solid rgba(0, 212, 255, 0.1)' }}>
+                  <Typography variant="subtitle2" sx={{ color: '#90caf9' }} gutterBottom>
                     SonarQube Settings
                   </Typography>
                   <Table size="small">
                     <TableBody>
                       <TableRow>
-                        <TableCell sx={{ border: 0, py: 0.5, pl: 0 }}>URL:</TableCell>
+                        <TableCell sx={{ border: 0, py: 0.5, pl: 0, color: '#e3f2fd' }}>URL:</TableCell>
                         <TableCell sx={{ border: 0, py: 0.5 }}>
                           {formData.sonarqube_url ? (
                             <Chip size="small" label={formData.sonarqube_url} color="primary" variant="outlined" />
@@ -276,7 +291,7 @@ function ConfigurationForm() {
                         </TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell sx={{ border: 0, py: 0.5, pl: 0 }}>Project:</TableCell>
+                        <TableCell sx={{ border: 0, py: 0.5, pl: 0, color: '#e3f2fd' }}>Project:</TableCell>
                         <TableCell sx={{ border: 0, py: 0.5 }}>
                           {formData.sonarqube_project_key ? (
                             <Chip size="small" label={`Key: ${formData.sonarqube_project_key}`} color="primary" variant="outlined" />
@@ -288,7 +303,7 @@ function ConfigurationForm() {
                         </TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell sx={{ border: 0, py: 0.5, pl: 0 }}>API Key:</TableCell>
+                        <TableCell sx={{ border: 0, py: 0.5, pl: 0, color: '#e3f2fd' }}>API Key:</TableCell>
                         <TableCell sx={{ border: 0, py: 0.5 }}>
                           {formData.sonarqube_api_key ? (
                             <Chip size="small" icon={<CheckIcon />} label="Config" color="primary" variant="outlined" />
@@ -304,14 +319,14 @@ function ConfigurationForm() {
                 </Paper>
               </Grid>
               <Grid item xs={12} md={4}>
-                <Paper sx={{ p: 2 }}>
-                  <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+                <Paper sx={{ p: 2, background: 'rgba(0, 212, 255, 0.03)', border: '1px solid rgba(0, 212, 255, 0.1)' }}>
+                  <Typography variant="subtitle2" sx={{ color: '#90caf9' }} gutterBottom>
                     GitHub Settings
                   </Typography>
                   <Table size="small">
                     <TableBody>
                       <TableRow>
-                        <TableCell sx={{ border: 0, py: 0.5, pl: 0 }}>Owner:</TableCell>
+                        <TableCell sx={{ border: 0, py: 0.5, pl: 0, color: '#e3f2fd' }}>Owner:</TableCell>
                         <TableCell sx={{ border: 0, py: 0.5 }}>
                           {formData.github_owner ? (
                             <Chip size="small" label={formData.github_owner} color="primary" variant="outlined" />
@@ -323,7 +338,7 @@ function ConfigurationForm() {
                         </TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell sx={{ border: 0, py: 0.5, pl: 0 }}>Repo:</TableCell>
+                        <TableCell sx={{ border: 0, py: 0.5, pl: 0, color: '#e3f2fd' }}>Repo:</TableCell>
                         <TableCell sx={{ border: 0, py: 0.5 }}>
                           {formData.github_repo ? (
                             <Chip size="small" label={formData.github_repo} color="primary" variant="outlined" />
@@ -333,7 +348,7 @@ function ConfigurationForm() {
                         </TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell sx={{ border: 0, py: 0.5, pl: 0 }}>API Key:</TableCell>
+                        <TableCell sx={{ border: 0, py: 0.5, pl: 0, color: '#e3f2fd' }}>API Key:</TableCell>
                         <TableCell sx={{ border: 0, py: 0.5 }}>
                           {formData.github_api_key ? (
                             <Chip size="small" icon={<CheckIcon />} label="Config" color="primary" variant="outlined" />
@@ -354,9 +369,9 @@ function ConfigurationForm() {
       )}
 
       <form onSubmit={handleSubmit}>
-        <Card sx={{ mb: 3 }}>
+        <Card sx={{ mb: 3, background: 'linear-gradient(145deg, #0d2137 0%, #132f4c 100%)', border: '1px solid rgba(0, 212, 255, 0.1)' }}>
           <CardContent>
-            <Typography variant="h6" gutterBottom>
+            <Typography variant="h6" gutterBottom sx={{ color: '#00d4ff' }}>
               General Settings
             </Typography>
             <Grid container spacing={2}>
@@ -375,13 +390,13 @@ function ConfigurationForm() {
           </CardContent>
         </Card>
 
-        <Card sx={{ mb: 3 }}>
+        <Card sx={{ mb: 3, background: 'linear-gradient(145deg, #0d2137 0%, #132f4c 100%)', border: '1px solid rgba(0, 212, 255, 0.1)' }}>
           <CardContent>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-              <Typography variant="h6">LLM Settings</Typography>
+              <Typography variant="h6" sx={{ color: '#00d4ff' }}>LLM Settings</Typography>
               <DefaultChip field="llm_url" />
             </Box>
-            <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+            <Typography variant="body2" sx={{ color: '#90caf9', mb: 2 }}>
               Configure the AI model for vulnerability analysis. Leave empty to use default settings.
             </Typography>
             <Grid container spacing={2}>
@@ -422,13 +437,13 @@ function ConfigurationForm() {
           </CardContent>
         </Card>
 
-        <Card sx={{ mb: 3 }}>
+        <Card sx={{ mb: 3, background: 'linear-gradient(145deg, #0d2137 0%, #132f4c 100%)', border: '1px solid rgba(0, 212, 255, 0.1)' }}>
           <CardContent>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-              <Typography variant="h6">SonarQube Settings</Typography>
+              <Typography variant="h6" sx={{ color: '#00d4ff' }}>SonarQube Settings</Typography>
             </Box>
-            <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-              Configure the SonarQube/SonarCloud connection. Provide either <strong>Project Key</strong> or <strong>Project Name</strong>.
+            <Typography variant="body2" sx={{ color: '#90caf9', mb: 2 }}>
+              Configure the SonarQube/SonarCloud connection. Provide either <strong style={{ color: '#00d4ff' }}>Project Key</strong> or <strong style={{ color: '#00d4ff' }}>Project Name</strong>.
             </Typography>
             <Grid container spacing={2}>
               <Grid item xs={12} md={6}>
@@ -454,8 +469,8 @@ function ConfigurationForm() {
                 />
               </Grid>
               <Grid item xs={12}>
-                <Divider sx={{ my: 1 }}>
-                  <Chip label="Project Identifier (provide one)" size="small" />
+                <Divider sx={{ my: 1, borderColor: 'rgba(0, 212, 255, 0.2)' }}>
+                  <Chip label="Project Identifier (provide one)" size="small" sx={{ color: '#90caf9', borderColor: 'rgba(0, 212, 255, 0.3)' }} variant="outlined" />
                 </Divider>
               </Grid>
               <Grid item xs={12} md={6}>
@@ -486,12 +501,12 @@ function ConfigurationForm() {
           </CardContent>
         </Card>
 
-        <Card sx={{ mb: 3 }}>
+        <Card sx={{ mb: 3, background: 'linear-gradient(145deg, #0d2137 0%, #132f4c 100%)', border: '1px solid rgba(0, 212, 255, 0.1)' }}>
           <CardContent>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-              <Typography variant="h6">GitHub Settings</Typography>
+              <Typography variant="h6" sx={{ color: '#00d4ff' }}>GitHub Settings</Typography>
             </Box>
-            <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+            <Typography variant="body2" sx={{ color: '#90caf9', mb: 2 }}>
               Configure the GitHub repository to fetch source code. Repository name and branch are required.
             </Typography>
             <Grid container spacing={2}>
@@ -545,7 +560,7 @@ function ConfigurationForm() {
         </Card>
 
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-          <Button onClick={() => navigate('/configurations')}>Cancel</Button>
+          <Button onClick={() => navigate('/configurations')} sx={{ color: '#90caf9' }}>Cancel</Button>
           <Button
             type="submit"
             variant="contained"

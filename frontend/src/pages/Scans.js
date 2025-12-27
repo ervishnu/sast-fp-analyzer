@@ -149,17 +149,45 @@ function Scans() {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-        <CircularProgress />
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '50vh',
+          gap: 2,
+        }}
+      >
+        <CircularProgress size={48} />
+        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+          Loading scans...
+        </Typography>
       </Box>
     );
   }
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4">Scans</Typography>
-        <IconButton onClick={loadScans} title="Refresh">
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+        <Box>
+          <Typography
+            variant="h4"
+            sx={{
+              fontWeight: 700,
+              background: 'linear-gradient(90deg, #00d4ff 0%, #7c4dff 100%)',
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}
+          >
+            Scans
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
+            View and manage vulnerability analysis scans
+          </Typography>
+        </Box>
+        <IconButton onClick={loadScans} title="Refresh" sx={{ color: '#00d4ff' }}>
           <RefreshIcon />
         </IconButton>
       </Box>
@@ -171,55 +199,100 @@ function Scans() {
       )}
 
       {scans.length === 0 ? (
-        <Card>
-          <CardContent sx={{ textAlign: 'center', py: 4 }}>
-            <Typography variant="h6" color="textSecondary" gutterBottom>
+        <Card
+          sx={{
+            textAlign: 'center',
+            py: 8,
+            background: 'rgba(0, 212, 255, 0.02)',
+            border: '1px dashed rgba(0, 212, 255, 0.2)',
+          }}
+        >
+          <CardContent>
+            <Box
+              sx={{
+                width: 80,
+                height: 80,
+                borderRadius: '50%',
+                background: 'rgba(0, 212, 255, 0.1)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                mx: 'auto',
+                mb: 3,
+              }}
+            >
+              <RefreshIcon sx={{ fontSize: 40, color: '#00d4ff' }} />
+            </Box>
+            <Typography variant="h6" sx={{ color: 'text.primary', mb: 1 }}>
               No scans yet
             </Typography>
-            <Typography color="textSecondary">
-              Start a scan from a configuration to see results here.
+            <Typography variant="body2" sx={{ color: 'text.secondary', maxWidth: 400, mx: 'auto' }}>
+              Start a scan from a configuration to see vulnerability analysis results here.
             </Typography>
           </CardContent>
         </Card>
       ) : (
-        <TableContainer component={Paper}>
+        <TableContainer
+          component={Paper}
+          sx={{
+            background: 'linear-gradient(145deg, #0d2137 0%, #132f4c 100%)',
+            border: '1px solid rgba(0, 212, 255, 0.1)',
+          }}
+        >
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>ID</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Total Vulnerabilities</TableCell>
-                <TableCell>False Positives</TableCell>
-                <TableCell>True Positives</TableCell>
-                <TableCell>Needs Review</TableCell>
-                <TableCell>Started</TableCell>
-                <TableCell>Completed</TableCell>
-                <TableCell>Actions</TableCell>
+                <TableCell sx={{ color: '#90caf9', fontWeight: 600 }}>ID</TableCell>
+                <TableCell sx={{ color: '#90caf9', fontWeight: 600 }}>Status</TableCell>
+                <TableCell sx={{ color: '#90caf9', fontWeight: 600 }}>Total</TableCell>
+                <TableCell sx={{ color: '#90caf9', fontWeight: 600 }}>False +</TableCell>
+                <TableCell sx={{ color: '#90caf9', fontWeight: 600 }}>True +</TableCell>
+                <TableCell sx={{ color: '#90caf9', fontWeight: 600 }}>Review</TableCell>
+                <TableCell sx={{ color: '#90caf9', fontWeight: 600 }}>Started</TableCell>
+                <TableCell sx={{ color: '#90caf9', fontWeight: 600 }}>Completed</TableCell>
+                <TableCell sx={{ color: '#90caf9', fontWeight: 600 }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {scans.map((scan) => (
-                <TableRow key={scan.id} hover>
-                  <TableCell>{scan.id}</TableCell>
+                <TableRow
+                  key={scan.id}
+                  hover
+                  sx={{
+                    '&:hover': {
+                      backgroundColor: 'rgba(0, 212, 255, 0.05) !important',
+                    },
+                  }}
+                >
+                  <TableCell sx={{ color: '#00d4ff', fontWeight: 600 }}>#{scan.id}</TableCell>
                   <TableCell>
                     <Chip
                       label={scan.status}
                       color={statusColors[scan.status] || 'default'}
                       size="small"
+                      sx={{ fontWeight: 500 }}
                     />
                   </TableCell>
-                  <TableCell>{scan.total_vulnerabilities}</TableCell>
+                  <TableCell sx={{ color: '#e3f2fd' }}>{scan.total_vulnerabilities}</TableCell>
                   <TableCell>
-                    <Chip label={scan.false_positives} color="success" size="small" variant="outlined" />
+                    <Typography sx={{ color: '#00e676', fontWeight: 500 }}>
+                      {scan.false_positives}
+                    </Typography>
                   </TableCell>
                   <TableCell>
-                    <Chip label={scan.true_positives} color="error" size="small" variant="outlined" />
+                    <Typography sx={{ color: '#ff5252', fontWeight: 500 }}>
+                      {scan.true_positives}
+                    </Typography>
                   </TableCell>
                   <TableCell>
-                    <Chip label={scan.needs_review} color="warning" size="small" variant="outlined" />
+                    <Typography sx={{ color: '#ffab00', fontWeight: 500 }}>
+                      {scan.needs_review}
+                    </Typography>
                   </TableCell>
-                  <TableCell>{new Date(scan.scan_started_at).toLocaleString()}</TableCell>
-                  <TableCell>
+                  <TableCell sx={{ color: '#90caf9' }}>
+                    {new Date(scan.scan_started_at).toLocaleString()}
+                  </TableCell>
+                  <TableCell sx={{ color: '#90caf9' }}>
                     {scan.scan_completed_at
                       ? new Date(scan.scan_completed_at).toLocaleString()
                       : '-'}

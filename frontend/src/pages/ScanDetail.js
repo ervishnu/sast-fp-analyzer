@@ -172,8 +172,9 @@ function ScanDetail() {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-        <CircularProgress />
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '50vh', gap: 2 }}>
+        <CircularProgress size={48} />
+        <Typography variant="body2" sx={{ color: 'text.secondary' }}>Loading scan details...</Typography>
       </Box>
     );
   }
@@ -192,10 +193,21 @@ function ScanDetail() {
   return (
     <Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3, flexWrap: 'wrap' }}>
-        <Button startIcon={<BackIcon />} onClick={() => navigate('/scans')}>
+        <Button startIcon={<BackIcon />} onClick={() => navigate('/scans')} sx={{ color: '#90caf9' }}>
           Back
         </Button>
-        <Typography variant="h4">Scan #{id}</Typography>
+        <Typography 
+          variant="h4"
+          sx={{
+            fontWeight: 700,
+            background: 'linear-gradient(90deg, #00d4ff 0%, #7c4dff 100%)',
+            backgroundClip: 'text',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+          }}
+        >
+          Scan #{id}
+        </Typography>
         <Chip
           label={status?.status || scan?.status}
           color={
@@ -272,10 +284,10 @@ function ScanDetail() {
       {/* Progress indicator for running/paused scans */}
       {(scan?.status === 'running' || scan?.status === 'pending' || scan?.status === 'paused' ||
         status?.status === 'running' || status?.status === 'pending' || status?.status === 'paused') && status && (
-        <Card sx={{ mb: 3 }}>
+        <Card sx={{ mb: 3, background: 'linear-gradient(145deg, #0d2137 0%, #132f4c 100%)', border: '1px solid rgba(0, 212, 255, 0.1)' }}>
           <CardContent>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-              <Typography variant="h6">
+              <Typography variant="h6" sx={{ color: '#e3f2fd' }}>
                 Scan Progress
               </Typography>
               {status?.status === 'paused' && (
@@ -288,12 +300,12 @@ function ScanDetail() {
                   variant="determinate"
                   value={status.progress || 0}
                   color={status?.status === 'paused' ? 'secondary' : 'primary'}
-                  sx={{ height: 10, borderRadius: 5 }}
+                  sx={{ height: 10, borderRadius: 5, backgroundColor: 'rgba(0, 212, 255, 0.1)' }}
                 />
               </Box>
-              <Typography variant="body2">{status.progress || 0}%</Typography>
+              <Typography variant="body2" sx={{ color: '#00d4ff', fontWeight: 600 }}>{status.progress || 0}%</Typography>
             </Box>
-            <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+            <Typography variant="body2" sx={{ mt: 1, color: '#90caf9' }}>
               {status.message}
             </Typography>
           </CardContent>
@@ -303,33 +315,33 @@ function ScanDetail() {
       {/* Summary statistics */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={6} sm={3}>
-          <Paper sx={{ p: 2, textAlign: 'center' }}>
-            <Typography variant="h4">{scan?.total_vulnerabilities || 0}</Typography>
-            <Typography color="textSecondary">Total</Typography>
+          <Paper sx={{ p: 2, textAlign: 'center', background: 'rgba(0, 212, 255, 0.1)', border: '1px solid rgba(0, 212, 255, 0.2)' }}>
+            <Typography variant="h4" sx={{ color: '#00d4ff' }}>{scan?.total_vulnerabilities || 0}</Typography>
+            <Typography sx={{ color: '#90caf9' }}>Total</Typography>
           </Paper>
         </Grid>
         <Grid item xs={6} sm={3}>
-          <Paper sx={{ p: 2, textAlign: 'center', backgroundColor: '#e8f5e9' }}>
-            <Typography variant="h4" color="success.main">
+          <Paper sx={{ p: 2, textAlign: 'center', background: 'rgba(0, 230, 118, 0.1)', border: '1px solid rgba(0, 230, 118, 0.2)' }}>
+            <Typography variant="h4" sx={{ color: '#00e676' }}>
               {scan?.false_positives || 0}
             </Typography>
-            <Typography color="textSecondary">False Positives</Typography>
+            <Typography sx={{ color: '#90caf9' }}>False Positives</Typography>
           </Paper>
         </Grid>
         <Grid item xs={6} sm={3}>
-          <Paper sx={{ p: 2, textAlign: 'center', backgroundColor: '#ffebee' }}>
-            <Typography variant="h4" color="error.main">
+          <Paper sx={{ p: 2, textAlign: 'center', background: 'rgba(255, 82, 82, 0.1)', border: '1px solid rgba(255, 82, 82, 0.2)' }}>
+            <Typography variant="h4" sx={{ color: '#ff5252' }}>
               {scan?.true_positives || 0}
             </Typography>
-            <Typography color="textSecondary">True Positives</Typography>
+            <Typography sx={{ color: '#90caf9' }}>True Positives</Typography>
           </Paper>
         </Grid>
         <Grid item xs={6} sm={3}>
-          <Paper sx={{ p: 2, textAlign: 'center', backgroundColor: '#fff3e0' }}>
-            <Typography variant="h4" color="warning.main">
+          <Paper sx={{ p: 2, textAlign: 'center', background: 'rgba(255, 171, 0, 0.1)', border: '1px solid rgba(255, 171, 0, 0.2)' }}>
+            <Typography variant="h4" sx={{ color: '#ffab00' }}>
               {scan?.needs_review || 0}
             </Typography>
-            <Typography color="textSecondary">Needs Review</Typography>
+            <Typography sx={{ color: '#90caf9' }}>Needs Review</Typography>
           </Paper>
         </Grid>
       </Grid>
@@ -343,16 +355,22 @@ function ScanDetail() {
 
       {/* Vulnerability and Hotspot analyses */}
       {scan?.vulnerability_analyses && scan.vulnerability_analyses.length > 0 && (
-        <Card>
+        <Card sx={{ background: 'linear-gradient(145deg, #0d2137 0%, #132f4c 100%)', border: '1px solid rgba(0, 212, 255, 0.1)' }}>
           <CardContent>
-            <Typography variant="h6" gutterBottom>
+            <Typography variant="h6" gutterBottom sx={{ color: '#e3f2fd' }}>
               Security Findings (Vulnerabilities & Hotspots)
             </Typography>
 
             <Tabs
               value={tabValue}
               onChange={(e, v) => setTabValue(v)}
-              sx={{ mb: 2, borderBottom: 1, borderColor: 'divider' }}
+              sx={{ 
+                mb: 2, 
+                borderBottom: 1, 
+                borderColor: 'rgba(0, 212, 255, 0.2)',
+                '& .MuiTab-root': { color: '#90caf9' },
+                '& .Mui-selected': { color: '#00d4ff' },
+              }}
             >
               <Tab label={`All (${scan.vulnerability_analyses.length})`} />
               <Tab
@@ -394,19 +412,19 @@ function ScanDetail() {
                         }}
                       />
                     )}
-                    <Typography sx={{ flexGrow: 1 }} noWrap>
+                    <Typography sx={{ flexGrow: 1, color: '#e3f2fd' }} noWrap>
                       {analysis.file_path}
                     </Typography>
                     {analysis.line_number && (
-                      <Typography variant="body2" color="textSecondary">
+                      <Typography variant="body2" sx={{ color: '#90caf9' }}>
                         Line {analysis.line_number}
                       </Typography>
                     )}
                     {analysis.severity && (
-                      <Chip label={analysis.severity} size="small" variant="outlined" />
+                      <Chip label={analysis.severity} size="small" variant="outlined" sx={{ borderColor: '#00d4ff', color: '#00d4ff' }} />
                     )}
                     {analysis.confidence !== null && (
-                      <Typography variant="body2" color="textSecondary">
+                      <Typography variant="body2" sx={{ color: '#90caf9' }}>
                         Confidence: {(analysis.confidence * 100).toFixed(0)}%
                       </Typography>
                     )}
@@ -416,46 +434,46 @@ function ScanDetail() {
                   <Grid container spacing={2}>
                     {analysis.issue_type === 'SECURITY_HOTSPOT' && (
                       <Grid item xs={12}>
-                        <Paper sx={{ p: 2, backgroundColor: '#fff3e0', mb: 1 }}>
-                          <Typography variant="subtitle2" color="warning.main" gutterBottom>
+                        <Paper sx={{ p: 2, backgroundColor: 'rgba(255, 152, 0, 0.15)', border: '1px solid rgba(255, 152, 0, 0.3)', mb: 1 }}>
+                          <Typography variant="subtitle2" sx={{ color: '#ffab00' }} gutterBottom>
                             🔥 Security Hotspot
                           </Typography>
-                          <Typography variant="body2">
+                          <Typography variant="body2" sx={{ color: '#e3f2fd' }}>
                             This is a security-sensitive area of code that requires review.
                             {analysis.security_category && (
-                              <> Category: <strong>{analysis.security_category}</strong></>
+                              <> Category: <strong style={{ color: '#00d4ff' }}>{analysis.security_category}</strong></>
                             )}
                           </Typography>
                         </Paper>
                       </Grid>
                     )}
                     <Grid item xs={12}>
-                      <Typography variant="subtitle2" color="textSecondary">
+                      <Typography variant="subtitle2" sx={{ color: '#90caf9' }}>
                         {analysis.issue_type === 'SECURITY_HOTSPOT' ? 'Rule' : 'Vulnerability Type'}
                       </Typography>
-                      <Typography>{analysis.vulnerability_type || 'N/A'}</Typography>
+                      <Typography sx={{ color: '#e3f2fd' }}>{analysis.vulnerability_type || 'N/A'}</Typography>
                     </Grid>
                     <Grid item xs={12}>
-                      <Typography variant="subtitle2" color="textSecondary">
+                      <Typography variant="subtitle2" sx={{ color: '#90caf9' }}>
                         Original Message
                       </Typography>
-                      <Typography>{analysis.original_message || 'N/A'}</Typography>
+                      <Typography sx={{ color: '#e3f2fd' }}>{analysis.original_message || 'N/A'}</Typography>
                     </Grid>
                     <Grid item xs={12}>
-                      <Divider sx={{ my: 1 }} />
-                      <Typography variant="subtitle2" color="textSecondary">
+                      <Divider sx={{ my: 1, borderColor: 'rgba(0, 212, 255, 0.2)' }} />
+                      <Typography variant="subtitle2" sx={{ color: '#90caf9' }}>
                         Short Reason
                       </Typography>
-                      <Typography>{analysis.short_reason || 'N/A'}</Typography>
+                      <Typography sx={{ color: '#e3f2fd' }}>{analysis.short_reason || 'N/A'}</Typography>
                     </Grid>
                     <Grid item xs={12}>
-                      <Typography variant="subtitle2" color="textSecondary">
+                      <Typography variant="subtitle2" sx={{ color: '#90caf9' }}>
                         Detailed Explanation
                       </Typography>
-                      <Paper sx={{ p: 2, backgroundColor: '#f5f5f5' }}>
+                      <Paper sx={{ p: 2, backgroundColor: 'rgba(0, 212, 255, 0.05)', border: '1px solid rgba(0, 212, 255, 0.1)' }}>
                         <Typography
                           component="pre"
-                          sx={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', m: 0 }}
+                          sx={{ whiteSpace: 'pre-wrap', fontFamily: 'JetBrains Mono, monospace', m: 0, color: '#e3f2fd', fontSize: '0.875rem' }}
                         >
                           {analysis.detailed_explanation || 'N/A'}
                         </Typography>
@@ -463,18 +481,19 @@ function ScanDetail() {
                     </Grid>
                     {analysis.fix_suggestion && (
                       <Grid item xs={12}>
-                        <Typography variant="subtitle2" color="textSecondary">
+                        <Typography variant="subtitle2" sx={{ color: '#90caf9' }}>
                           Fix Suggestion
                         </Typography>
                         <Paper
                           sx={{
                             p: 2,
-                            backgroundColor: '#e3f2fd',
-                            fontFamily: 'monospace',
+                            backgroundColor: 'rgba(0, 230, 118, 0.05)',
+                            border: '1px solid rgba(0, 230, 118, 0.2)',
+                            fontFamily: 'JetBrains Mono, monospace',
                             fontSize: '0.875rem',
                           }}
                         >
-                          <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
+                          <pre style={{ margin: 0, whiteSpace: 'pre-wrap', color: '#e3f2fd' }}>
                             {analysis.fix_suggestion}
                           </pre>
                         </Paper>
@@ -482,7 +501,7 @@ function ScanDetail() {
                     )}
                     {analysis.severity_override && (
                       <Grid item xs={12}>
-                        <Typography variant="subtitle2" color="textSecondary">
+                        <Typography variant="subtitle2" sx={{ color: '#90caf9' }}>
                           Severity Override
                         </Typography>
                         <Chip label={analysis.severity_override} color="warning" />
@@ -490,15 +509,15 @@ function ScanDetail() {
                     )}
                     {analysis.prompt_sent && (
                       <Grid item xs={12}>
-                        <Divider sx={{ my: 1 }} />
-                        <Typography variant="subtitle2" color="textSecondary">
+                        <Divider sx={{ my: 1, borderColor: 'rgba(0, 212, 255, 0.2)' }} />
+                        <Typography variant="subtitle2" sx={{ color: '#90caf9' }}>
                           Prompt Sent to LLM
                         </Typography>
                         <Paper
                           sx={{
                             p: 2,
-                            backgroundColor: '#fafafa',
-                            border: '1px solid #e0e0e0',
+                            backgroundColor: 'rgba(124, 77, 255, 0.05)',
+                            border: '1px solid rgba(124, 77, 255, 0.2)',
                             maxHeight: '400px',
                             overflow: 'auto',
                           }}
@@ -507,9 +526,10 @@ function ScanDetail() {
                             style={{
                               margin: 0,
                               whiteSpace: 'pre-wrap',
-                              fontFamily: 'monospace',
+                              fontFamily: 'JetBrains Mono, monospace',
                               fontSize: '0.75rem',
                               lineHeight: 1.5,
+                              color: '#e3f2fd',
                             }}
                           >
                             {analysis.prompt_sent}

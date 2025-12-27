@@ -117,20 +117,50 @@ function Configurations() {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-        <CircularProgress />
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '50vh',
+          gap: 2,
+        }}
+      >
+        <CircularProgress size={48} />
+        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+          Loading configurations...
+        </Typography>
       </Box>
     );
   }
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4">Configurations</Typography>
+      {/* Header */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+        <Box>
+          <Typography
+            variant="h4"
+            sx={{
+              fontWeight: 700,
+              background: 'linear-gradient(90deg, #00d4ff 0%, #7c4dff 100%)',
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}
+          >
+            Configurations
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
+            Manage your project scan configurations
+          </Typography>
+        </Box>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
           onClick={() => navigate('/configurations/new')}
+          sx={{ px: 3 }}
         >
           New Configuration
         </Button>
@@ -143,18 +173,41 @@ function Configurations() {
       )}
 
       {configurations.length === 0 ? (
-        <Card>
-          <CardContent sx={{ textAlign: 'center', py: 4 }}>
-            <Typography variant="h6" color="textSecondary" gutterBottom>
+        <Card
+          sx={{
+            textAlign: 'center',
+            py: 8,
+            background: 'rgba(0, 212, 255, 0.02)',
+            border: '1px dashed rgba(0, 212, 255, 0.2)',
+          }}
+        >
+          <CardContent>
+            <Box
+              sx={{
+                width: 80,
+                height: 80,
+                borderRadius: '50%',
+                background: 'rgba(0, 212, 255, 0.1)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                mx: 'auto',
+                mb: 3,
+              }}
+            >
+              <AddIcon sx={{ fontSize: 40, color: '#00d4ff' }} />
+            </Box>
+            <Typography variant="h6" sx={{ color: 'text.primary', mb: 1 }}>
               No configurations yet
             </Typography>
-            <Typography color="textSecondary" sx={{ mb: 2 }}>
-              Create your first configuration to start analyzing vulnerabilities.
+            <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3, maxWidth: 400, mx: 'auto' }}>
+              Create your first configuration to connect your SonarQube project and start analyzing vulnerabilities with AI.
             </Typography>
             <Button
               variant="contained"
               startIcon={<AddIcon />}
               onClick={() => navigate('/configurations/new')}
+              sx={{ px: 4 }}
             >
               Create Configuration
             </Button>
@@ -164,10 +217,28 @@ function Configurations() {
         <Grid container spacing={3}>
           {configurations.map((config) => (
             <Grid item xs={12} md={6} lg={4} key={config.id}>
-              <Card>
-                <CardContent>
+              <Card
+                sx={{
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  position: 'relative',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: '3px',
+                    background: config.is_active
+                      ? 'linear-gradient(90deg, #00e676 0%, #00d4ff 100%)'
+                      : 'rgba(255, 255, 255, 0.1)',
+                  },
+                }}
+              >
+                <CardContent sx={{ flexGrow: 1 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <Typography variant="h6" gutterBottom>
+                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
                       {config.name}
                     </Typography>
                     <Chip
@@ -306,7 +377,7 @@ function Configurations() {
         maxWidth="md"
         fullWidth
       >
-        <DialogTitle>
+        <DialogTitle sx={{ color: '#00d4ff' }}>
           Test Results: {selectedTestResult?.configName}
         </DialogTitle>
         <DialogContent dividers>
@@ -314,7 +385,7 @@ function Configurations() {
             <Box>
               {/* Summary */}
               <Box sx={{ mb: 3 }}>
-                <Typography variant="subtitle1" gutterBottom>
+                <Typography variant="subtitle1" gutterBottom sx={{ color: '#e3f2fd' }}>
                   Connection Status
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
@@ -336,10 +407,10 @@ function Configurations() {
                 </Box>
               </Box>
 
-              <Divider sx={{ my: 2 }} />
+              <Divider sx={{ my: 2, borderColor: 'rgba(0, 212, 255, 0.2)' }} />
 
               {/* Detailed Results */}
-              <Typography variant="subtitle1" gutterBottom>
+              <Typography variant="subtitle1" gutterBottom sx={{ color: '#e3f2fd' }}>
                 Detailed Results
               </Typography>
               
@@ -361,27 +432,30 @@ function Configurations() {
                       <Typography variant="body2" color={selectedTestResult.details.sonarqube.success ? 'success.main' : 'error.main'}>
                         <strong>Status:</strong> {selectedTestResult.details.sonarqube.success ? 'Connected' : 'Failed'}
                       </Typography>
-                      <Typography variant="body2" sx={{ mt: 1 }}>
+                      <Typography variant="body2" sx={{ mt: 1, color: '#e3f2fd' }}>
                         <strong>Message:</strong> {selectedTestResult.details.sonarqube.message}
                       </Typography>
                       {selectedTestResult.details.sonarqube.error_type && (
-                        <Typography variant="body2" sx={{ mt: 1 }}>
+                        <Typography variant="body2" sx={{ mt: 1, color: '#ffab00' }}>
                           <strong>Error Type:</strong> {selectedTestResult.details.sonarqube.error_type}
                         </Typography>
                       )}
                       {selectedTestResult.details.sonarqube.error_details && (
                         <Box sx={{ mt: 1 }}>
-                          <Typography variant="body2"><strong>Error Details:</strong></Typography>
+                          <Typography variant="body2" sx={{ color: '#e3f2fd' }}><strong>Error Details:</strong></Typography>
                           <Box
                             component="pre"
                             sx={{
-                              backgroundColor: '#f5f5f5',
+                              backgroundColor: 'rgba(255, 82, 82, 0.1)',
+                              border: '1px solid rgba(255, 82, 82, 0.3)',
+                              color: '#ffcdd2',
                               p: 1.5,
                               borderRadius: 1,
                               overflow: 'auto',
                               fontSize: '0.75rem',
                               maxHeight: 200,
-                              mt: 0.5
+                              mt: 0.5,
+                              fontFamily: 'JetBrains Mono, monospace',
                             }}
                           >
                             {selectedTestResult.details.sonarqube.error_details}
@@ -390,7 +464,7 @@ function Configurations() {
                       )}
                     </Box>
                   ) : (
-                    <Typography variant="body2" color="textSecondary">No detailed information available</Typography>
+                    <Typography variant="body2" sx={{ color: '#90caf9' }}>No detailed information available</Typography>
                   )}
                 </AccordionDetails>
               </Accordion>
@@ -413,27 +487,30 @@ function Configurations() {
                       <Typography variant="body2" color={selectedTestResult.details.github.success ? 'success.main' : 'error.main'}>
                         <strong>Status:</strong> {selectedTestResult.details.github.success ? 'Connected' : 'Failed'}
                       </Typography>
-                      <Typography variant="body2" sx={{ mt: 1 }}>
+                      <Typography variant="body2" sx={{ mt: 1, color: '#e3f2fd' }}>
                         <strong>Message:</strong> {selectedTestResult.details.github.message}
                       </Typography>
                       {selectedTestResult.details.github.error_type && (
-                        <Typography variant="body2" sx={{ mt: 1 }}>
+                        <Typography variant="body2" sx={{ mt: 1, color: '#ffab00' }}>
                           <strong>Error Type:</strong> {selectedTestResult.details.github.error_type}
                         </Typography>
                       )}
                       {selectedTestResult.details.github.error_details && (
                         <Box sx={{ mt: 1 }}>
-                          <Typography variant="body2"><strong>Error Details:</strong></Typography>
+                          <Typography variant="body2" sx={{ color: '#e3f2fd' }}><strong>Error Details:</strong></Typography>
                           <Box
                             component="pre"
                             sx={{
-                              backgroundColor: '#f5f5f5',
+                              backgroundColor: 'rgba(255, 82, 82, 0.1)',
+                              border: '1px solid rgba(255, 82, 82, 0.3)',
+                              color: '#ffcdd2',
                               p: 1.5,
                               borderRadius: 1,
                               overflow: 'auto',
                               fontSize: '0.75rem',
                               maxHeight: 200,
-                              mt: 0.5
+                              mt: 0.5,
+                              fontFamily: 'JetBrains Mono, monospace',
                             }}
                           >
                             {selectedTestResult.details.github.error_details}
@@ -442,7 +519,7 @@ function Configurations() {
                       )}
                     </Box>
                   ) : (
-                    <Typography variant="body2" color="textSecondary">No detailed information available</Typography>
+                    <Typography variant="body2" sx={{ color: '#90caf9' }}>No detailed information available</Typography>
                   )}
                 </AccordionDetails>
               </Accordion>
@@ -465,27 +542,30 @@ function Configurations() {
                       <Typography variant="body2" color={selectedTestResult.details.llm.success ? 'success.main' : 'error.main'}>
                         <strong>Status:</strong> {selectedTestResult.details.llm.success ? 'Connected' : 'Failed'}
                       </Typography>
-                      <Typography variant="body2" sx={{ mt: 1 }}>
+                      <Typography variant="body2" sx={{ mt: 1, color: '#e3f2fd' }}>
                         <strong>Message:</strong> {selectedTestResult.details.llm.message}
                       </Typography>
                       {selectedTestResult.details.llm.error_type && (
-                        <Typography variant="body2" sx={{ mt: 1 }}>
+                        <Typography variant="body2" sx={{ mt: 1, color: '#ffab00' }}>
                           <strong>Error Type:</strong> {selectedTestResult.details.llm.error_type}
                         </Typography>
                       )}
                       {selectedTestResult.details.llm.error_details && (
                         <Box sx={{ mt: 1 }}>
-                          <Typography variant="body2"><strong>Error Details:</strong></Typography>
+                          <Typography variant="body2" sx={{ color: '#e3f2fd' }}><strong>Error Details:</strong></Typography>
                           <Box
                             component="pre"
                             sx={{
-                              backgroundColor: '#f5f5f5',
+                              backgroundColor: 'rgba(255, 82, 82, 0.1)',
+                              border: '1px solid rgba(255, 82, 82, 0.3)',
+                              color: '#ffcdd2',
                               p: 1.5,
                               borderRadius: 1,
                               overflow: 'auto',
                               fontSize: '0.75rem',
                               maxHeight: 200,
-                              mt: 0.5
+                              mt: 0.5,
+                              fontFamily: 'JetBrains Mono, monospace',
                             }}
                           >
                             {selectedTestResult.details.llm.error_details}
@@ -494,7 +574,7 @@ function Configurations() {
                       )}
                     </Box>
                   ) : (
-                    <Typography variant="body2" color="textSecondary">No detailed information available</Typography>
+                    <Typography variant="body2" sx={{ color: '#90caf9' }}>No detailed information available</Typography>
                   )}
                 </AccordionDetails>
               </Accordion>
